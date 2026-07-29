@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import ScrollReveal from "./ScrollReveal";
@@ -81,7 +83,7 @@ export default function HowItWorks() {
             {steps.map((step, i) => (
               <ScrollReveal key={step.number} delay={i * 0.15}>
                 <div className="relative pl-16 sm:pl-20">
-                  {/* Minimalistic circle instead of emoji square */}
+                  {/* Minimalistic circle */}
                   <motion.div
                     whileInView={{ scale: [0.5, 1.1, 1] }}
                     viewport={{ once: true }}
@@ -111,4 +113,3 @@ export default function HowItWorks() {
     </section>
   );
 }
-
