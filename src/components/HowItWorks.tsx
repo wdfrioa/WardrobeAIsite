@@ -1,5 +1,3 @@
-"use client";
-
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import ScrollReveal from "./ScrollReveal";
@@ -8,25 +6,45 @@ import SectionHeading from "./SectionHeading";
 const steps = [
   {
     number: "01",
-    emoji: "📸",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+      </svg>
+    ),
     title: "Сфотографируйте одежду",
     description: "Просто наведите камеру на вещь. AI распознает её автоматически и добавит в ваш цифровой гардероб.",
   },
   {
     number: "02",
-    emoji: "🧠",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93L12 22" />
+        <path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93" />
+        <path d="M16 16c-2.5 1.5-5.5 1.5-8 0" />
+      </svg>
+    ),
     title: "AI анализирует",
     description: "Нейросеть определяет категорию, цвет, стиль, сезонность и совместимость с другими вещами.",
   },
   {
     number: "03",
-    emoji: "🎯",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+    ),
     title: "Выберите мероприятие",
     description: "Укажите, куда вы собираетесь — на работу, свидание, прогулку или важную встречу.",
   },
   {
     number: "04",
-    emoji: "✨",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    ),
     title: "Получите готовый образ",
     description: "AI создаёт идеальный look из вашего гардероба с учётом погоды, события и вашего стиля.",
   },
@@ -63,14 +81,14 @@ export default function HowItWorks() {
             {steps.map((step, i) => (
               <ScrollReveal key={step.number} delay={i * 0.15}>
                 <div className="relative pl-16 sm:pl-20">
-                  {/* Step circle */}
+                  {/* Minimalistic circle instead of emoji square */}
                   <motion.div
                     whileInView={{ scale: [0.5, 1.1, 1] }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: i * 0.15 }}
-                    className="absolute left-0 top-0 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-clay to-clay-dark flex items-center justify-center text-xl sm:text-2xl shadow-lg shadow-clay/20"
+                    className="absolute left-0 top-0 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-clay to-clay-dark flex items-center justify-center text-white shadow-lg shadow-clay/20"
                   >
-                    {step.emoji}
+                    {step.icon}
                   </motion.div>
 
                   <div className="glass rounded-2xl sm:rounded-3xl p-6 sm:p-8">
@@ -93,3 +111,4 @@ export default function HowItWorks() {
     </section>
   );
 }
+
