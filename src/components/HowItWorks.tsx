@@ -83,7 +83,7 @@ export default function HowItWorks() {
             {steps.map((step, i) => (
               <ScrollReveal key={step.number} delay={i * 0.15}>
                 <div className="relative pl-16 sm:pl-20">
-                  {/* Minimalistic circle */}
+                  {/* Minimalistic circle instead of emoji square */}
                   <motion.div
                     whileInView={{ scale: [0.5, 1.1, 1] }}
                     viewport={{ once: true }}
