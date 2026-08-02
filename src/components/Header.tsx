@@ -141,6 +141,13 @@ export default function Header() {
             >
               Скачать приложение
             </a>
+            <Link
+              href="/account/"
+              className="px-5 py-2.5 rounded-xl border border-line text-ink
+                        font-medium text-sm hover:bg-clay/5 transition"
+            >
+              Войти
+            </Link>
           </nav>
         </motion.div>
       </motion.div>
