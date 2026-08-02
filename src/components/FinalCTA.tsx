@@ -2,7 +2,9 @@
 
 import { motion } from "framer-motion";
 import ScrollReveal from "./ScrollReveal";
+import Link from "next/link";
 
+<Link href="/premium/">Получить Premium</Link>
 export default function FinalCTA() {
   return (
     <section id="download" className="py-24 sm:py-32 lg:py-40">

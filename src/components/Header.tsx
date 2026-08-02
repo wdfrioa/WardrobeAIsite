@@ -2,7 +2,9 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState } from "react";
+import Link from "next/link";
 
+<Link href="/premium/">Получить Premium</Link>
 const navLinks = [
   { label: "Возможности", href: "#features" },
   { label: "Как работает", href: "#how-it-works" },
