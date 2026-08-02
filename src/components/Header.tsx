@@ -4,7 +4,6 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
 
-<Link href="/premium/">Получить Premium</Link>
 const navLinks = [
   { label: "Возможности", href: "#features" },
   { label: "Как работает", href: "#how-it-works" },
@@ -20,6 +19,12 @@ export default function Header() {
   const headerPy = useTransform(scrollY, [0, 100], [20, 12]);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const headerBackground = useTransform(
+    headerBg,
+    (v) => `rgba(248,246,242,${v})`
+  );
+  const headerBackdrop = useTransform(headerBlur, (v) => `blur(${v}px)`);
+
   return (
     <motion.header
       className="fixed top-0 left-0 right-0 z-50"
@@ -31,15 +36,9 @@ export default function Header() {
       <motion.div
         className="mx-auto max-w-7xl px-4 sm:px-6"
         style={{
-          backgroundColor: useTransform(
-            headerBg,
-            (v) => `rgba(248,246,242,${v})`
-          ),
-          backdropFilter: useTransform(headerBlur, (v) => `blur(${v}px)`),
-          WebkitBackdropFilter: useTransform(
-            headerBlur,
-            (v) => `blur(${v}px)`
-          ),
+          backgroundColor: headerBackground,
+          backdropFilter: headerBackdrop,
+          WebkitBackdropFilter: headerBackdrop,
           borderRadius: 16,
           border: "1px solid rgba(231,226,218,0.5)",
         }}
@@ -72,8 +71,15 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* CTA Button */}
-          <div className="hidden lg:block">
+          {/* CTA Buttons */}
+          <div className="hidden lg:flex items-center gap-3">
+            <Link
+              href="/account/"
+              className="px-5 py-2.5 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition-all duration-300"
+            >
+              Войти
+            </Link>
+
             <a
               href="#download"
               className="btn-shine inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-cream text-sm font-medium rounded-xl hover:bg-ink/90 transition-all duration-300 hover:shadow-lg hover:shadow-ink/20 hover:scale-105"
@@ -110,7 +116,9 @@ export default function Header() {
                 className="block w-5 h-0.5 bg-ink rounded-full"
               />
               <motion.span
-                animate={mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
+                animate={
+                  mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }
+                }
                 className="block w-5 h-0.5 bg-ink rounded-full origin-center"
               />
             </div>
@@ -120,7 +128,11 @@ export default function Header() {
         {/* Mobile Menu */}
         <motion.div
           initial={false}
-          animate={mobileOpen ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
+          animate={
+            mobileOpen
+              ? { height: "auto", opacity: 1 }
+              : { height: 0, opacity: 0 }
+          }
           className="lg:hidden overflow-hidden"
         >
           <nav className="flex flex-col px-4 pb-4 gap-1">
@@ -134,6 +146,7 @@ export default function Header() {
                 {link.label}
               </a>
             ))}
+
             <a
               href="#download"
               onClick={() => setMobileOpen(false)}
@@ -141,10 +154,11 @@ export default function Header() {
             >
               Скачать приложение
             </a>
+
             <Link
               href="/account/"
-              className="px-5 py-2.5 rounded-xl border border-line text-ink
-                        font-medium text-sm hover:bg-clay/5 transition"
+              onClick={() => setMobileOpen(false)}
+              className="mt-1 inline-flex items-center justify-center px-5 py-3 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition"
             >
               Войти
             </Link>
