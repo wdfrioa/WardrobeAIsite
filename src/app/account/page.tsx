@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/lib/AuthProvider";
 
 /**
  * ============================================================

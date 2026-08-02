@@ -4,6 +4,8 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
 
+import { useAuth } from "@/lib/AuthProvider";
+
 const navLinks = [
   { label: "Возможности", href: "#features" },
   { label: "Как работает", href: "#how-it-works" },
@@ -24,6 +26,11 @@ export default function Header() {
     (v) => `rgba(248,246,242,${v})`
   );
   const headerBackdrop = useTransform(headerBlur, (v) => `blur(${v}px)`);
+
+  const { user, isPremium, loading } = useAuth();
+
+  /** Инициал для аватара */
+  const initial = (user?.email ?? "?").charAt(0).toUpperCase();
 
   return (
     <motion.header
@@ -73,12 +80,40 @@ export default function Header() {
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            <Link
-              href="/account/"
-              className="px-5 py-2.5 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition-all duration-300"
-            >
-              Войти
-            </Link>
+            {loading ? (
+              // Пока проверяем сессию — заглушка, чтобы кнопки не «прыгали»
+              <div className="w-24 h-10 rounded-xl bg-clay/5 animate-pulse" />
+            ) : user ? (
+              // ВОШЁЛ — аватар с email вместо кнопки «Войти»
+              <Link
+                href="/account/"
+                className="flex items-center gap-2.5 pl-2 pr-4 py-2 rounded-xl border border-line hover:bg-clay/5 transition-all duration-300 group"
+              >
+                <div className="relative">
+                  <div className="w-7 h-7 rounded-lg bg-clay/15 flex items-center justify-center text-xs font-bold text-clay">
+                    {initial}
+                  </div>
+                  {isPremium ? (
+                    <span
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-ink border-2 border-cream"
+                      title="Premium"
+                    />
+                  ) : null}
+                </div>
+
+                <span className="text-sm font-medium text-ink max-w-[130px] truncate">
+                  {user.email}
+                </span>
+              </Link>
+            ) : (
+              // НЕ ВОШЁЛ
+              <Link
+                href="/account/"
+                className="px-5 py-2.5 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition-all duration-300"
+              >
+                Войти
+              </Link>
+            )}
 
             <a
               href="#download"
@@ -155,13 +190,38 @@ export default function Header() {
               Скачать приложение
             </a>
 
-            <Link
-              href="/account/"
-              onClick={() => setMobileOpen(false)}
-              className="mt-1 inline-flex items-center justify-center px-5 py-3 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition"
-            >
-              Войти
-            </Link>
+            {!loading ? (
+              user ? (
+                <Link
+                  href="/account/"
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-1 flex items-center gap-3 px-4 py-3 rounded-xl border border-line hover:bg-clay/5 transition"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-clay/15 flex items-center justify-center text-xs font-bold text-clay shrink-0">
+                    {initial}
+                  </div>
+
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-medium text-ink truncate">
+                      {user.email}
+                    </p>
+                    <p className="text-xs text-muted">
+                      {isPremium ? "Premium" : "Личный кабинет"}
+                    </p>
+                  </div>
+
+                  <span className="text-muted">›</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/account/"
+                  onClick={() => setMobileOpen(false)}
+                  className="mt-1 inline-flex items-center justify-center px-5 py-3 text-sm font-medium text-ink rounded-xl border border-line hover:bg-clay/5 transition"
+                >
+                  Войти
+                </Link>
+              )
+            ) : null}
           </nav>
         </motion.div>
       </motion.div>

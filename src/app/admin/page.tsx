@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/useAuth";
+import { useAuth } from "@/lib/AuthProvider";
 
 /**
  * ============================================================

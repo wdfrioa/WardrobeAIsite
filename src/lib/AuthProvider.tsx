@@ -1,8 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { supabase, isSupabaseConfigured } from "./supabase";
+
+/**
+ * ============================================================
+ *  ГЛОБАЛЬНАЯ АВТОРИЗАЦИЯ САЙТА
+ * ============================================================
+ *
+ *  Оборачивает всё приложение в src/app/layout.tsx, поэтому
+ *  и Header, и страницы видят одно и то же состояние входа.
+ *
+ *    const { user, isPremium, isAdmin, loading } = useAuth();
+ * ============================================================
+ */
 
 export interface Profile {
   id: string;
@@ -13,12 +33,27 @@ export interface Profile {
   role: string;
 }
 
-/**
- * Авторизация и профиль пользователя на сайте.
- *
- *   const { user, profile, isAdmin, isPremium, loading, signOut } = useAuth();
- */
-export function useAuth() {
+interface AuthValue {
+  user: { id: string; email?: string } | null;
+  profile: Profile | null;
+  loading: boolean;
+  isAdmin: boolean;
+  isPremium: boolean;
+  refresh: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthValue>({
+  user: null,
+  profile: null,
+  loading: true,
+  isAdmin: false,
+  isPremium: false,
+  refresh: async () => {},
+  signOut: async () => {},
+});
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,7 +94,6 @@ export function useAuth() {
 
     if (!isSupabaseConfigured) return;
 
-    // Реакция на вход/выход и на возврат по magic link
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -88,13 +122,22 @@ export function useAuth() {
         new Date(profile.premium_expires_at).getTime() > Date.now())
   );
 
-  return {
-    user,
-    profile,
-    loading,
-    isAdmin: profile?.role === "admin",
-    isPremium,
-    refresh,
-    signOut,
-  };
+  const value = useMemo<AuthValue>(
+    () => ({
+      user,
+      profile,
+      loading,
+      isAdmin: profile?.role === "admin",
+      isPremium,
+      refresh,
+      signOut,
+    }),
+    [user, profile, loading, isPremium, refresh, signOut]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthValue {
+  return useContext(AuthContext);
 }

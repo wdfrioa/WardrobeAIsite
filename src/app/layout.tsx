@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { AuthProvider } from "@/lib/AuthProvider";
 
 export const metadata: Metadata = {
   title: "Wardrobe AI — Твой личный AI-стилист",
@@ -12,7 +13,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru" className="scroll-smooth">
-      <body className="antialiased">{children}</body>
+      <body className="...">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }
