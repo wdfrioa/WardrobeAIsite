@@ -23,6 +23,8 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
  * ============================================================ */
 
 /** Адрес вашей Edge Function. */
+/** Пока платёжка не подключена — кнопка只 показывает сообщение. */
+const PAYMENTS_ENABLED = false;
 const GRANT_URL =
   "https://ВАШ-ПРОЕКТ.supabase.co/functions/v1/grant-premium";
 
@@ -117,6 +119,11 @@ function PremiumContent() {
    * а grant-premium вызывайте из вебхука платёжной системы.
    */
   async function pay() {
+    if (!PAYMENTS_ENABLED) {
+      setMessage("Оплата скоро будет доступна. Для получения доступа напишите нам.");
+      return;
+    }
+
     if (!userId) {
       setMessage("Сначала войдите в аккаунт");
       return;
