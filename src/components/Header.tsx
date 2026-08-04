@@ -3,6 +3,14 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+
+/**
+ * При output: 'export' Next.js НЕ подставляет basePath в src изображений
+ * автоматически. Прописываем префикс вручную, иначе на GitHub Pages
+ * картинка ищется по /logo/... вместо /WardrobeAIsite/logo/...
+ */
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "/WardrobeAIsite";
 
 import { useAuth } from "@/lib/AuthProvider";
 
@@ -52,12 +60,15 @@ export default function Header() {
       >
         <div className="flex items-center justify-between py-3 px-4 sm:px-6">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-clay to-clay-dark flex items-center justify-center">
-              <span className="text-white text-sm font-bold font-heading">
-                W
-              </span>
-            </div>
+          <a href="#" className="flex items-center gap-2.5 group">
+            <Image
+              src={`${BASE}/logo/logo-clay.png`}
+              alt="Wardrobe AI"
+              width={44}
+              height={33}
+              priority
+              className="transition-transform duration-300 group-hover:scale-105"
+            />
             <span className="font-heading font-bold text-lg text-ink tracking-tight">
               Wardrobe
               <span className="text-clay ml-0.5">AI</span>
