@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthProvider";
+import AuthGate from "@/components/AuthGate";
 
 /**
  * ============================================================
@@ -24,17 +25,10 @@ function AccountContent() {
   const { user, profile, loading, isAdmin, isPremium, refresh, signOut } =
     useAuth();
 
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
   const [clothesCount, setClothesCount] = useState<number | null>(null);
 
   const fromApp = params.get("from") === "app";
-
-  useEffect(() => {
-    const prefill = params.get("email");
-    if (prefill) setEmail(prefill);
-  }, [params]);
 
   useEffect(() => {
     if (user) loadStats();
@@ -46,30 +40,6 @@ function AccountContent() {
     if (!error && data && data.length > 0) {
       setClothesCount(Number(data[0].clothes_count));
     }
-  }
-
-  async function signIn(event: React.FormEvent) {
-    event.preventDefault();
-
-    if (!email.trim()) {
-      setMessage("Введите email");
-      return;
-    }
-
-    setSending(true);
-    setMessage("");
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: window.location.href },
-    });
-
-    setSending(false);
-    setMessage(
-      error
-        ? `Ошибка: ${error.message}`
-        : "Готово! Проверьте почту — там ссылка для входа."
-    );
   }
 
   function pay() {
@@ -110,47 +80,12 @@ function AccountContent() {
     return (
       <Shell>
         <div className="max-w-md mx-auto">
-          <h1 className="font-heading text-3xl font-bold text-ink text-center">
-            Вход в аккаунт
-          </h1>
-          <p className="text-muted text-center mt-3">
-            {fromApp
-              ? "Войдите тем же email, что и в приложении"
-              : "Введите email — пришлём ссылку для входа"}
-          </p>
+          <AuthGate title="Вход в аккаунт" />
 
-          <form
-            onSubmit={signIn}
-            className="mt-8 rounded-3xl border border-line bg-white p-7"
-          >
-            <label className="block text-xs font-semibold tracking-wider text-muted mb-2">
-              EMAIL
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="вы@почта.ру"
-              className="w-full h-13 py-3 rounded-xl border border-line bg-cream
-                         px-4 outline-none focus:border-clay transition"
-            />
-
-            <button
-              type="submit"
-              disabled={sending}
-              className="w-full h-13 py-3.5 mt-4 rounded-xl bg-ink text-white
-                         font-semibold hover:bg-ink/90 transition disabled:opacity-50"
-            >
-              {sending ? "Отправляем…" : "Получить ссылку"}
-            </button>
-
-            <p className="text-xs text-muted text-center mt-4 leading-relaxed">
-              Пароль не нужен — вход по ссылке из письма
+          {fromApp ? (
+            <p className="text-center text-xs text-muted/70 mt-6">
+              Войдите тем же email, что и в приложении
             </p>
-          </form>
-
-          {message ? (
-            <p className="text-center text-sm text-muted mt-5">{message}</p>
           ) : null}
         </div>
       </Shell>

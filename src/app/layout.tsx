@@ -22,9 +22,16 @@ export const metadata: Metadata = {
   // public/manifest.json — убрать префикс /WardrobeAIsite
   manifest: `${BASE}/manifest.json`,
 
+  // Иконка во вкладке браузера. Несколько размеров — чтобы
+  // на любом экране и в закладках выглядело чётко.
   icons: {
-    icon: `${BASE}/logo/favicon.png`,
-    apple: `${BASE}/logo/avatar-tg.png`,
+    icon: [
+      { url: `${BASE}/favicon.ico`, sizes: "any" },
+      { url: `${BASE}/favicon-16.png`, sizes: "16x16", type: "image/png" },
+      { url: `${BASE}/favicon-32.png`, sizes: "32x32", type: "image/png" },
+    ],
+    apple: `${BASE}/apple-touch-icon.png`,
+    shortcut: `${BASE}/favicon.ico`,
   },
 
   appleWebApp: {
