@@ -1,0 +1,17 @@
+{
+  "name": "Wardrobe AI — личный AI-стилист",
+  "short_name": "Wardrobe AI",
+  "description": "Приложение подбирает образы из вашей одежды с учётом погоды и повода",
+  "start_url": "/WardrobeAIsite/app/",
+  "scope": "/WardrobeAIsite/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F8F6F2",
+  "theme_color": "#F8F6F2",
+  "lang": "ru",
+  "icons": [
+    { "src": "/WardrobeAIsite/logo/favicon.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "/WardrobeAIsite/logo/avatar-tg.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/WardrobeAIsite/logo/adaptive-icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "maskable" }
+  ]
+}

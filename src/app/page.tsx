@@ -7,7 +7,7 @@ import Showcase from "@/components/Showcase";
 import AIDemo from "@/components/AIDemo";
 import Testimonials from "@/components/Testimonials";
 import FAQ from "@/components/FAQ";
-import FinalCTA from "@/components/FinalCTA";
+import Download from "@/components/Download";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
         <AIDemo />
         <Testimonials />
         <FAQ />
-        <FinalCTA />
+        <Download />
       </main>
       <Footer />
     </>
