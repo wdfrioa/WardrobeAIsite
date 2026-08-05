@@ -13,6 +13,7 @@ import AccountEditor from "@/components/AccountEditor";
 import WebStylist from "@/components/WebStylist";
 import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
 import AddClothing from "@/components/AddClothing";
+import { generateWardrobe, drawItem } from "@/lib/demoWardrobe";
 
 /**
  * ============================================================
@@ -83,7 +84,7 @@ type Screen =
 const CATEGORIES = ["Все", "Верх", "Низ", "Обувь", "Аксессуары"];
 
 export default function WebApp() {
-  const { user, profile, loading: authLoading, isPremium } = useAuth();
+  const { user, profile, loading: authLoading, isPremium, isBeta } = useAuth();
 
   const [screen, setScreen] = useState<Screen>("wardrobe");
   const [clothes, setClothes] = useState<Clothing[]>([]);
@@ -171,6 +172,8 @@ export default function WebApp() {
           onReload={load}
           onNavigate={setScreen}
           premium={isPremium}
+          beta={isBeta}
+          gender={gender}
           weather={weather}
         />
       ) : null}
@@ -243,6 +246,8 @@ function Wardrobe({
   onReload,
   onNavigate,
   premium,
+  beta,
+  gender,
   weather,
 }: {
   clothes: Clothing[];
@@ -251,6 +256,8 @@ function Wardrobe({
   onReload: () => void;
   onNavigate: (s: Screen) => void;
   premium: boolean;
+  beta: boolean;
+  gender: string;
   weather: Weather | null;
 }) {
   /** Первая буква имени для аватара. */
@@ -281,6 +288,31 @@ function Wardrobe({
       .some((field) => String(field).toLowerCase().includes(query));
   });
 
+  /** Бета: заполнить гардероб случайными вещами для проверки. */
+  const [generating, setGenerating] = useState(false);
+
+  async function generateDemo() {
+    setGenerating(true);
+
+    const items = generateWardrobe(gender, 14);
+
+    // Картинки рисуются локально в data:URL — сеть не нужна
+    const rows = items.map((item) => ({
+      user_id: userId,
+      name: item.name,
+      category: item.category,
+      type: item.type,
+      color: item.color,
+      season: item.season,
+      image_url: drawItem(item.shape, item.color),
+    }));
+
+    await supabase.from("clothes").insert(rows);
+
+    setGenerating(false);
+    onReload();
+  }
+
   async function remove(id: string) {
     await supabase.from("clothes").delete().eq("id", id);
     onReload();
@@ -291,15 +323,15 @@ function Wardrobe({
       {/* ---------- ШАПКА: название + аватар ---------- */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-heading text-[34px] leading-none font-extrabold text-ink">
+          <h1 className="font-heading text-[27px] leading-none font-extrabold text-ink">
             Wardrobe
           </h1>
-          <p className="text-muted text-[15px] mt-2">Твоя коллекция одежды</p>
+          <p className="text-muted text-[13px] mt-1.5">Твоя коллекция одежды</p>
         </div>
 
         <button
           onClick={() => onNavigate("profile")}
-          className="w-12 h-12 rounded-full overflow-hidden shrink-0
+          className="w-10 h-10 rounded-full overflow-hidden shrink-0
                      bg-clay/15 flex items-center justify-center
                      text-lg font-bold text-clay
                      hover:opacity-80 transition"
@@ -311,27 +343,27 @@ function Wardrobe({
 
       {/* ---------- ПОГОДА ---------- */}
       {weather ? (
-        <div className="mt-6 rounded-3xl bg-white p-5 flex items-center gap-4">
-          <span className="text-[42px] leading-none shrink-0">
+        <div className="mt-5 rounded-2xl bg-white p-4 flex items-center gap-3.5">
+          <span className="text-[32px] leading-none shrink-0">
             {weatherEmoji(weather.main)}
           </span>
 
           <div className="min-w-0">
-            <p className="font-bold text-ink text-[17px] leading-tight">
+            <p className="font-bold text-ink text-[15px] leading-tight">
               {weather.city || "Ваш город"}
             </p>
 
             <p className="mt-1 leading-tight">
-              <span className="font-extrabold text-ink text-[22px]">
+              <span className="font-extrabold text-ink text-[19px]">
                 {Math.round(weather.temperature)}°C
               </span>
-              <span className="text-muted text-[15px]">
+              <span className="text-muted text-[13px]">
                 {" "}
                 (Ощущается как {Math.round(weather.feels)}°C)
               </span>
             </p>
 
-            <p className="text-muted text-[15px] mt-1 leading-tight first-letter:uppercase">
+            <p className="text-muted text-[13px] mt-0.5 leading-tight first-letter:uppercase">
               {weather.description}
             </p>
           </div>
@@ -344,7 +376,7 @@ function Wardrobe({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Поиск по гардеробу…"
-          className="w-full rounded-3xl bg-white px-6 py-4 text-[16px]
+          className="w-full rounded-2xl bg-white px-5 py-3 text-[14px]
                      text-ink placeholder:text-muted/70
                      outline-none border border-transparent
                      focus:border-clay/40 transition"
@@ -360,7 +392,7 @@ function Wardrobe({
             <button
               key={category}
               onClick={() => setFilter(category)}
-              className={`px-6 py-3 rounded-full text-[15px] font-semibold
+              className={`px-4.5 py-2.5 rounded-full text-[13px] font-semibold
                           shrink-0 transition ${
                             active
                               ? "bg-ink text-white"
@@ -372,6 +404,37 @@ function Wardrobe({
           );
         })}
       </div>
+
+      {/* ---------- БЕТА: СЛУЧАЙНЫЙ ГАРДЕРОБ ---------- */}
+      {beta ? (
+        <button
+          onClick={generateDemo}
+          disabled={generating}
+          className="w-full mt-4 flex items-center gap-3 rounded-2xl
+                     border border-dashed px-4 py-3 text-left
+                     hover:bg-white transition disabled:opacity-50"
+          style={{ borderColor: "#C9C6C2" }}
+        >
+          <span className="text-[20px] leading-none shrink-0">🎲</span>
+
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold text-ink text-[13.5px] leading-tight">
+              {generating ? "Создаём гардероб…" : "Случайный гардероб"}
+            </span>
+            <span className="block text-muted text-[11.5px] leading-tight mt-0.5">
+              14 вещей для проверки стилиста
+            </span>
+          </span>
+
+          <span
+            className="shrink-0 px-2 py-0.5 rounded-md text-[9px] font-bold
+                       tracking-wide"
+            style={{ backgroundColor: "#EEEAFE", color: "#5E5CE6" }}
+          >
+            BETA
+          </span>
+        </button>
+      ) : null}
 
       {/* ---------- СПИСОК ВЕЩЕЙ ---------- */}
       {clothes.length === 0 ? (
@@ -391,11 +454,11 @@ function Wardrobe({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4 mt-5 pb-32">
+        <div className="grid grid-cols-2 gap-3 mt-4 pb-32">
           {visible.map((item) => (
             <div
               key={item.id}
-              className="relative rounded-3xl bg-white overflow-hidden group"
+              className="relative rounded-2xl bg-white overflow-hidden group"
             >
               <div className="aspect-square bg-cream">
                 {item.image_url ? (
@@ -423,12 +486,12 @@ function Wardrobe({
                 🗑
               </button>
 
-              <div className="p-4">
-                <p className="font-bold text-ink text-[15px] leading-snug">
+              <div className="p-3">
+                <p className="font-bold text-ink text-[13.5px] leading-snug">
                   {item.name}
                 </p>
                 {[item.type, item.color].filter(Boolean).length > 0 ? (
-                  <p className="text-muted text-[13px] mt-1 truncate">
+                  <p className="text-muted text-[11.5px] mt-0.5 truncate">
                     {[item.type, item.color].filter(Boolean).join(" · ")}
                   </p>
                 ) : null}

@@ -266,13 +266,13 @@ export default function AddClothing({
       <div className="pb-28">
         <div
           className="mt-10 bg-white p-10 text-center"
-          style={{ borderRadius: 28 }}
+          style={{ borderRadius: 22 }}
         >
-          <p style={{ fontSize: 52, lineHeight: 1 }}>✨</p>
+          <p style={{ fontSize: 40, lineHeight: 1 }}>✨</p>
 
           <p
-            className="font-extrabold mt-6"
-            style={{ fontSize: 22, color: "#18181B" }}
+            className="font-extrabold mt-5"
+            style={{ fontSize: 18, color: "#18181B" }}
           >
             ИИ распознаёт вещи
           </p>
@@ -307,12 +307,12 @@ export default function AddClothing({
       {/* ---------- заголовок ---------- */}
       <h1
         className="font-heading font-extrabold"
-        style={{ fontSize: 34, color: "#18181B", lineHeight: 1.1 }}
+        style={{ fontSize: 27, color: "#18181B", lineHeight: 1.1 }}
       >
         Добавить вещь
       </h1>
 
-      <p className="mt-2.5" style={{ fontSize: 16, color: "#71717A" }}>
+      <p className="mt-1.5" style={{ fontSize: 13.5, color: "#71717A" }}>
         ИИ автоматически заполнит информацию
       </p>
 
@@ -335,7 +335,7 @@ export default function AddClothing({
       />
 
       {/* ---------- карточка фото ---------- */}
-      <div className="mt-6 bg-white overflow-hidden" style={{ borderRadius: 28 }}>
+      <div className="mt-5 bg-white overflow-hidden" style={{ borderRadius: 22 }}>
         {preview ? (
           <div className="relative">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -364,18 +364,18 @@ export default function AddClothing({
             onClick={() => galleryRef.current?.click()}
             className="w-full flex flex-col items-center justify-center
                        hover:bg-black/[0.02] transition"
-            style={{ paddingTop: 64, paddingBottom: 64 }}
+            style={{ paddingTop: 46, paddingBottom: 46 }}
           >
-            <span style={{ fontSize: 52, lineHeight: 1 }}>📷</span>
+            <span style={{ fontSize: 38, lineHeight: 1 }}>📷</span>
 
             <span
-              className="font-extrabold mt-5"
-              style={{ fontSize: 21, color: "#18181B" }}
+              className="font-extrabold mt-4"
+              style={{ fontSize: 17, color: "#18181B" }}
             >
               Добавить фотографию
             </span>
 
-            <span className="mt-1.5" style={{ fontSize: 15, color: "#A1A1AA" }}>
+            <span className="mt-1" style={{ fontSize: 13, color: "#A1A1AA" }}>
               Нажмите чтобы выбрать изображение
             </span>
           </button>
@@ -413,8 +413,8 @@ export default function AddClothing({
       {FIELDS.map((field) => (
         <div key={field.key}>
           <p
-            className="font-extrabold mt-6 mb-2.5"
-            style={{ fontSize: 19, color: "#18181B" }}
+            className="font-extrabold mt-5 mb-2"
+            style={{ fontSize: 15.5, color: "#18181B" }}
           >
             {field.label}
           </p>
@@ -426,9 +426,9 @@ export default function AddClothing({
             className="w-full bg-white outline-none border border-transparent
                        focus:border-clay/40 transition"
             style={{
-              borderRadius: 20,
-              padding: "19px 22px",
-              fontSize: 16,
+              borderRadius: 16,
+              padding: "15px 18px",
+              fontSize: 14.5,
               color: "#18181B",
             }}
           />
@@ -436,7 +436,7 @@ export default function AddClothing({
           {field.hint ? (
             <p
               className="mt-2"
-              style={{ fontSize: 14, color: "#A1A1AA", lineHeight: 1.4 }}
+              style={{ fontSize: 12.5, color: "#A1A1AA", lineHeight: 1.4 }}
             >
               {field.hint}
             </p>
@@ -449,13 +449,13 @@ export default function AddClothing({
         onClick={save}
         disabled={saving || analyzing}
         className="w-full font-bold transition hover:opacity-90
-                   disabled:opacity-40 mt-8"
+                   disabled:opacity-40 mt-6"
         style={{
-          borderRadius: 22,
-          padding: 21,
+          borderRadius: 18,
+          padding: 17,
           backgroundColor: "#1B2333",
           color: "#FFFFFF",
-          fontSize: 18,
+          fontSize: 15.5,
         }}
       >
         {saving ? "Сохраняем…" : "💾 Сохранить вещь"}
@@ -493,20 +493,20 @@ function SourceButton({
       onClick={onClick}
       className="flex-1 bg-white flex flex-col items-center text-center
                  hover:bg-black/[0.02] transition"
-      style={{ borderRadius: 22, paddingTop: 18, paddingBottom: 18 }}
+      style={{ borderRadius: 18, paddingTop: 14, paddingBottom: 14 }}
     >
-      <span style={{ fontSize: 26, lineHeight: 1 }}>{emoji}</span>
+      <span style={{ fontSize: 21, lineHeight: 1 }}>{emoji}</span>
 
       <span
-        className="font-bold mt-2"
-        style={{ fontSize: 15, color: "#18181B" }}
+        className="font-bold mt-1.5"
+        style={{ fontSize: 13, color: "#18181B" }}
       >
         {label}
       </span>
 
       <span
         className="mt-0.5 px-2"
-        style={{ fontSize: 12, color: "#A1A1AA", lineHeight: 1.3 }}
+        style={{ fontSize: 11, color: "#A1A1AA", lineHeight: 1.3 }}
       >
         {hint}
       </span>

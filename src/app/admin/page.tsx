@@ -22,6 +22,7 @@ interface Row {
   id: string;
   email: string | null;
   is_premium: boolean;
+  is_beta: boolean;
   premium_source: string | null;
   premium_expires_at: string | null;
   role: string;
@@ -43,7 +44,7 @@ export default function AdminPage() {
     const { data, error } = await supabase
       .from("profiles")
       .select(
-        "id, email, is_premium, premium_source, premium_expires_at, role, created_at"
+        "id, email, is_premium, is_beta, premium_source, premium_expires_at, role, created_at"
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -86,6 +87,28 @@ export default function AdminPage() {
                 premium_expires_at: expiresAt,
               }
             : item
+        )
+      );
+    }
+
+    setBusy(null);
+  }
+
+  /** Бета-доступ: экспериментальные функции для выбранных людей. */
+  async function setBeta(row: Row, active: boolean) {
+    setBusy(row.id);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_beta: active })
+      .eq("id", row.id);
+
+    if (error) {
+      alert(`Не удалось обновить: ${error.message}`);
+    } else {
+      setRows((prev) =>
+        prev.map((item) =>
+          item.id === row.id ? { ...item, is_beta: active } : item
         )
       );
     }
@@ -259,6 +282,20 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
+                      <button
+                        disabled={busy === row.id}
+                        onClick={() => setBeta(row, !row.is_beta)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium
+                                    transition disabled:opacity-40 ${
+                                      row.is_beta
+                                        ? "bg-[#EEEAFE] text-[#5E5CE6]"
+                                        : "border border-line text-muted hover:bg-cream"
+                                    }`}
+                        title="Экспериментальные функции"
+                      >
+                        {row.is_beta ? "✓ Beta" : "Beta"}
+                      </button>
+
                       {active ? (
                         <button
                           disabled={busy === row.id}

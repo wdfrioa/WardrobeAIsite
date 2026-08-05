@@ -52,27 +52,27 @@ export default function WebStylist({
       {/* ---------- заголовок ---------- */}
       <h1
         className="font-heading font-extrabold"
-        style={{ fontSize: 34, color: "#18181B", lineHeight: 1.1 }}
+        style={{ fontSize: 27, color: "#18181B", lineHeight: 1.1 }}
       >
         AI Stylist
       </h1>
 
-      <p className="mt-3" style={{ fontSize: 16, color: "#71717A", lineHeight: 1.5 }}>
+      <p className="mt-2" style={{ fontSize: 14, color: "#71717A", lineHeight: 1.5 }}>
         Опиши куда ты собираешься, а ИИ сам подберёт лучший образ.
       </p>
 
       {/* ---------- карточка-подсказка ---------- */}
-      <div className="mt-6 bg-white p-7" style={{ borderRadius: 28 }}>
-        <p style={{ fontSize: 40, lineHeight: 1 }}>✨</p>
+      <div className="mt-5 bg-white p-5" style={{ borderRadius: 22 }}>
+        <p style={{ fontSize: 30, lineHeight: 1 }}>✨</p>
 
         <p
-          className="font-extrabold mt-5"
-          style={{ fontSize: 23, color: "#18181B" }}
+          className="font-extrabold mt-4"
+          style={{ fontSize: 18.5, color: "#18181B" }}
         >
           Куда вы собираетесь?
         </p>
 
-        <p className="mt-3" style={{ fontSize: 16, color: "#71717A", lineHeight: 1.55 }}>
+        <p className="mt-2" style={{ fontSize: 13.5, color: "#71717A", lineHeight: 1.5 }}>
           Напишите любое место или событие. Например: • свадьба • концерт •
           свидание • офис • море • отпуск • собеседование
         </p>
@@ -80,8 +80,8 @@ export default function WebStylist({
 
       {/* ---------- событие ---------- */}
       <p
-        className="font-extrabold mt-7 mb-3"
-        style={{ fontSize: 20, color: "#18181B" }}
+        className="font-extrabold mt-5 mb-2"
+        style={{ fontSize: 16, color: "#18181B" }}
       >
         Событие
       </p>
@@ -92,17 +92,17 @@ export default function WebStylist({
         className="w-full bg-white outline-none border border-transparent
                    focus:border-clay/40 transition"
         style={{
-          borderRadius: 20,
-          padding: "20px 22px",
-          fontSize: 16,
+          borderRadius: 16,
+          padding: "15px 18px",
+          fontSize: 14.5,
           color: "#18181B",
         }}
       />
 
       {/* ---------- пожелания ---------- */}
       <p
-        className="font-extrabold mt-6 mb-3"
-        style={{ fontSize: 20, color: "#18181B" }}
+        className="font-extrabold mt-5 mb-2"
+        style={{ fontSize: 16, color: "#18181B" }}
       >
         Пожелания
       </p>
@@ -114,9 +114,9 @@ export default function WebStylist({
         className="w-full bg-white outline-none border border-transparent
                    focus:border-clay/40 transition resize-none"
         style={{
-          borderRadius: 20,
-          padding: "20px 22px",
-          fontSize: 16,
+          borderRadius: 16,
+          padding: "15px 18px",
+          fontSize: 14.5,
           color: "#18181B",
         }}
       />
@@ -126,13 +126,13 @@ export default function WebStylist({
         onClick={onBuild}
         disabled={building || disabled}
         className="w-full font-bold transition hover:opacity-90
-                   disabled:opacity-40 mt-6"
+                   disabled:opacity-40 mt-5"
         style={{
-          borderRadius: 22,
-          padding: 20,
+          borderRadius: 18,
+          padding: 16,
           backgroundColor: "#1B2333",
           color: "#FFFFFF",
-          fontSize: 18,
+          fontSize: 15.5,
         }}
       >
         {building ? "Собираем образ…" : "✨ Создать образ"}
@@ -158,10 +158,10 @@ export default function WebStylist({
 
       {/* ---------- готовый образ ---------- */}
       {outfit ? (
-        <div className="mt-6 bg-white p-6" style={{ borderRadius: 28 }}>
+        <div className="mt-5 bg-white p-5" style={{ borderRadius: 22 }}>
           <p
             className="font-extrabold"
-            style={{ fontSize: 20, color: "#18181B" }}
+            style={{ fontSize: 17, color: "#18181B" }}
           >
             Ваш образ
           </p>
@@ -171,11 +171,11 @@ export default function WebStylist({
               <div
                 key={`${piece.id}-${i}`}
                 className="flex items-center gap-3 p-3"
-                style={{ borderRadius: 18, backgroundColor: "#F4F3F1" }}
+                style={{ borderRadius: 15, backgroundColor: "#F4F3F1" }}
               >
                 <div
                   className="rounded-xl overflow-hidden shrink-0 bg-white"
-                  style={{ width: 56, height: 56 }}
+                  style={{ width: 48, height: 48 }}
                 >
                   {piece.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -194,7 +194,7 @@ export default function WebStylist({
                 <div className="min-w-0">
                   <p
                     className="font-bold truncate"
-                    style={{ fontSize: 15, color: "#18181B" }}
+                    style={{ fontSize: 13.5, color: "#18181B" }}
                   >
                     {piece.name}
                   </p>

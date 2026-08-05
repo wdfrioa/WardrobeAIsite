@@ -31,6 +31,7 @@ export interface Profile {
   premium_source: string | null;
   premium_expires_at: string | null;
   role: string;
+  is_beta: boolean;
 
   /** Поля из supabase/profile-fields.sql */
   name: string | null;
@@ -44,6 +45,7 @@ interface AuthValue {
   loading: boolean;
   isAdmin: boolean;
   isPremium: boolean;
+  isBeta: boolean;
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -54,6 +56,7 @@ const AuthContext = createContext<AuthValue>({
   loading: true,
   isAdmin: false,
   isPremium: false,
+  isBeta: false,
   refresh: async () => {},
   signOut: async () => {},
 });
@@ -134,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isAdmin: profile?.role === "admin",
       isPremium,
+      isBeta: Boolean(profile?.is_beta),
       refresh,
       signOut,
     }),
