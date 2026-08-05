@@ -8,6 +8,10 @@ import { useAuth } from "@/lib/AuthProvider";
 import AuthGate from "@/components/AuthGate";
 import WebProfile from "@/components/WebProfile";
 import { getWeather, weatherEmoji, type Weather } from "@/lib/webWeather";
+import TabBar, { type Tab } from "@/components/TabBar";
+import AccountEditor from "@/components/AccountEditor";
+import WebStylist from "@/components/WebStylist";
+import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
 
 /**
  * ============================================================
@@ -65,13 +69,19 @@ interface OutfitItem {
   image_url?: string | null;
 }
 
-type Screen = "wardrobe" | "stylist" | "calendar" | "packing" | "profile";
+type Screen =
+  | "wardrobe"
+  | "stylist"
+  | "calendar"
+  | "packing"
+  | "profile"
+  | "account";
 
 /** Фильтры гардероба — как в мобильном приложении. */
 const CATEGORIES = ["Все", "Верх", "Низ", "Обувь", "Аксессуары"];
 
 export default function WebApp() {
-  const { user, loading: authLoading, isPremium } = useAuth();
+  const { user, profile, loading: authLoading, isPremium } = useAuth();
 
   const [screen, setScreen] = useState<Screen>("wardrobe");
   const [clothes, setClothes] = useState<Clothing[]>([]);
@@ -84,6 +94,11 @@ export default function WebApp() {
   useEffect(() => {
     getWeather().then(setWeather);
   }, []);
+
+  // Пол из профиля — AI не должен предлагать мужчинам платья.
+  const gender = ((profile as any)?.gender as string) === "female"
+    ? "female"
+    : "male";
 
   const load = useCallback(async () => {
     if (!user) {
@@ -136,6 +151,14 @@ export default function WebApp() {
     );
   }
 
+  /** Какая вкладка подсвечена внизу. */
+  const activeTab: Tab =
+    screen === "stylist"
+      ? "stylist"
+      : screen === "profile" || screen === "account"
+        ? "profile"
+        : "wardrobe";
+
   return (
     <Shell>
       {screen === "wardrobe" ? (
@@ -154,6 +177,7 @@ export default function WebApp() {
         <Stylist
           clothes={clothes}
           weather={weather}
+          gender={gender}
           onBack={() => setScreen("wardrobe")}
         />
       ) : null}
@@ -163,16 +187,13 @@ export default function WebApp() {
           clothes={clothes}
           premium={isPremium}
           weather={weather}
+          gender={gender}
           onBack={() => setScreen("wardrobe")}
         />
       ) : null}
 
       {screen === "packing" ? (
-        <Packing
-          clothes={clothes}
-          premium={isPremium}
-          onBack={() => setScreen("wardrobe")}
-        />
+        <Packing onBack={() => setScreen("wardrobe")} />
       ) : null}
 
       {screen === "profile" ? (
@@ -181,10 +202,20 @@ export default function WebApp() {
           count={clothes.length}
           premium={isPremium}
           onBack={() => setScreen("wardrobe")}
+          onNavigate={(next) => setScreen(next as Screen)}
         />
       ) : null}
 
-      <InstallHint />
+      {screen === "account" ? (
+        <AccountEditor onBack={() => setScreen("profile")} />
+      ) : null}
+
+      {screen === "wardrobe" ? <InstallHint /> : null}
+
+      <TabBar
+        active={activeTab}
+        onChange={(tab) => setScreen(tab as Screen)}
+      />
     </Shell>
   );
 }
@@ -675,10 +706,12 @@ function Fab({
 function Stylist({
   clothes,
   weather,
+  gender,
   onBack,
 }: {
   clothes: Clothing[];
   weather: Weather | null;
+  gender: string;
   onBack: () => void;
 }) {
   const [occasion, setOccasion] = useState("");
@@ -705,7 +738,7 @@ function Stylist({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          gender: "male",
+          gender,
           clothes: slim(clothes),
           occasion: occasion.trim(),
           wish: wish.trim(),
@@ -730,68 +763,21 @@ function Stylist({
     }
   }
 
+  // Кнопка «назад» не нужна — снизу есть меню вкладок
+  void onBack;
+
   return (
-    <>
-      <ScreenHeader title="AI Стилист" subtitle="Образ из ваших вещей" onBack={onBack} />
-
-      <div className="mt-5 rounded-3xl border border-line bg-white p-6">
-        <Field
-          label="КУДА СОБИРАЕТЕСЬ"
-          value={occasion}
-          onChange={setOccasion}
-          placeholder="Например: ужин в ресторане"
-        />
-        <Field
-          label="ПОЖЕЛАНИЯ"
-          value={wish}
-          onChange={setWish}
-          placeholder="Например: хочу выглядеть дорого"
-          textarea
-        />
-
-        <button
-          onClick={build}
-          disabled={building || clothes.length === 0}
-          className="w-full py-3.5 mt-5 rounded-xl bg-ink text-white font-semibold
-                     hover:bg-ink/90 transition disabled:opacity-40"
-        >
-          {building ? "Собираем образ…" : "Собрать образ"}
-        </button>
-
-        {clothes.length === 0 ? (
-          <p className="text-xs text-muted text-center mt-3">
-            Сначала добавьте вещи в гардероб
-          </p>
-        ) : null}
-
-        {error ? (
-          <p className="text-sm text-red-600 text-center mt-4">{error}</p>
-        ) : null}
-      </div>
-
-      {outfit ? (
-        <div className="mt-5 rounded-3xl border border-line bg-white p-6 mb-8">
-          <h3 className="font-heading font-bold text-ink text-lg">Ваш образ</h3>
-
-          <div className="mt-4 space-y-3">
-            {outfit.items.map((piece, i) => (
-              <ItemRow key={`${piece.id}-${i}`} item={piece} />
-            ))}
-          </div>
-
-          {outfit.explanation ? (
-            <div className="mt-5 p-4 rounded-2xl bg-clay/5">
-              <p className="text-xs font-semibold text-clay-dark">
-                ПОЧЕМУ ЭТО РАБОТАЕТ
-              </p>
-              <p className="text-sm text-ink/80 mt-2 leading-relaxed">
-                {outfit.explanation}
-              </p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </>
+    <WebStylist
+      occasion={occasion}
+      wish={wish}
+      building={building}
+      error={error}
+      outfit={outfit}
+      disabled={clothes.length === 0}
+      onOccasion={setOccasion}
+      onWish={setWish}
+      onBuild={build}
+    />
   );
 }
 
@@ -803,24 +789,29 @@ function Calendar({
   clothes,
   premium,
   weather,
+  gender,
   onBack,
 }: {
   clothes: Clothing[];
   premium: boolean;
   weather: Weather | null;
+  gender: string;
   onBack: () => void;
 }) {
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [event, setEvent] = useState("");
+  const [planned, setPlanned] = useState<PlannedOutfit[]>([]);
   const [building, setBuilding] = useState(false);
-  const [outfit, setOutfit] = useState<OutfitItem[] | null>(null);
   const [error, setError] = useState("");
 
   if (!premium) {
     return <PremiumLock title="Календарь образов" emoji="📅" onBack={onBack} />;
   }
 
-  async function build() {
+  async function build(
+    date: string,
+    time: string,
+    event: string,
+    wish: string
+  ) {
     if (!event.trim()) {
       setError("Опишите событие");
       return;
@@ -834,10 +825,10 @@ function Calendar({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          gender: "male",
+          gender,
           clothes: slim(clothes),
-          occasion: `${event.trim()} (${date})`,
-          wish: "Учти дату и время года.",
+          occasion: `${event.trim()} (${date}, ${time})`,
+          wish: wish.trim() || "Учти дату и время года.",
           weather,
         }),
       });
@@ -845,7 +836,22 @@ function Calendar({
       const data = await res.json();
 
       if (data?.success && data.result?.items?.length) {
-        setOutfit(restore(data.result.items, clothes));
+        const items = restore(data.result.items, clothes);
+
+        setPlanned((prev) => [
+          ...prev,
+          {
+            id: `${date}-${time}-${Date.now()}`,
+            date,
+            time,
+            event: event.trim(),
+            items: items.map((it) => ({
+              id: String(it.id),
+              name: it.name,
+              image_url: it.image_url ?? null,
+            })),
+          },
+        ]);
       } else {
         setError(data?.error ?? "Не удалось собрать образ");
       }
@@ -857,266 +863,56 @@ function Calendar({
   }
 
   return (
-    <>
-      <ScreenHeader
-        title="Календарь образов"
-        subtitle="Планируйте наперёд"
-        onBack={onBack}
-      />
-
-      <div className="mt-5 rounded-3xl border border-line bg-white p-6">
-        <label className="block text-xs font-semibold tracking-wider text-muted mb-2">
-          ДАТА
-        </label>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          /*
-           * appearance-none + min-w-0 + box-border лечат баг Safari на iOS:
-           * поле type="date" имеет свой встроенный размер и вылезает
-           * за границы блока, игнорируя ширину контейнера.
-           */
-          className="block w-full max-w-full min-w-0 box-border py-3
-                     rounded-xl border border-line bg-cream px-4
-                     appearance-none outline-none focus:border-clay transition
-                     text-ink text-base"
-          style={{ WebkitAppearance: "none" }}
-        />
-
-        <div className="mt-4">
-          <Field
-            label="СОБЫТИЕ"
-            value={event}
-            onChange={setEvent}
-            placeholder="Например: собеседование"
-          />
-        </div>
-
-        <button
-          onClick={build}
-          disabled={building}
-          className="w-full py-3.5 mt-5 rounded-xl bg-ink text-white font-semibold
-                     hover:bg-ink/90 transition disabled:opacity-40"
-        >
-          {building ? "Собираем…" : "Создать образ"}
-        </button>
-
-        {error ? (
-          <p className="text-sm text-red-600 text-center mt-4">{error}</p>
-        ) : null}
-      </div>
-
-      {outfit ? (
-        <div className="mt-5 rounded-3xl border border-line bg-white p-6 mb-8">
-          <p className="text-xs font-semibold text-muted">
-            {new Date(date).toLocaleDateString("ru-RU", {
-              day: "numeric",
-              month: "long",
-            })}
-          </p>
-          <h3 className="font-heading font-bold text-ink text-lg mt-1">
-            {event}
-          </h3>
-
-          <div className="mt-4 space-y-3">
-            {outfit.map((piece, i) => (
-              <ItemRow key={`${piece.id}-${i}`} item={piece} />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </>
+    <WebCalendar
+      planned={planned}
+      building={building}
+      error={error}
+      onBuild={build}
+      onOpen={() => {}}
+      onBack={onBack}
+    />
   );
 }
 
 /* ============================================================
-   ЧЕМОДАН
+   ЧЕМОДАН — СКОРО
    ============================================================ */
 
-function Packing({
-  clothes,
-  premium,
-  onBack,
-}: {
-  clothes: Clothing[];
-  premium: boolean;
-  onBack: () => void;
-}) {
-  const [city, setCity] = useState("");
-  const [nights, setNights] = useState("5");
-  const [purpose, setPurpose] = useState("");
-  const [building, setBuilding] = useState(false);
-  const [items, setItems] = useState<OutfitItem[] | null>(null);
-  const [packed, setPacked] = useState<Set<string>>(new Set());
-  const [error, setError] = useState("");
-
-  if (!premium) {
-    return <PremiumLock title="Сбор чемодана" emoji="🧳" onBack={onBack} />;
-  }
-
-  async function build() {
-    if (!city.trim() || !purpose.trim()) {
-      setError("Заполните город и повод поездки");
-      return;
-    }
-
-    setBuilding(true);
-    setError("");
-
-    try {
-      const res = await fetch(`${API_URL}/stylist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gender: "male",
-          clothes: slim(clothes),
-          occasion: `Поездка в ${city.trim()} на ${nights} ночей. ${purpose.trim()}`,
-          wish:
-            "Подбери вещи на всю поездку, а не один образ. " +
-            "Учти слои и универсальность вещей.",
-          // Погода в чемодане своя — по городу назначения, не по текущему
-          weather: null,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data?.success && data.result?.items?.length) {
-        setItems(restore(data.result.items, clothes));
-        setPacked(new Set());
-      } else {
-        setError(data?.error ?? "Не удалось собрать чемодан");
-      }
-    } catch {
-      setError("Сервер недоступен");
-    } finally {
-      setBuilding(false);
-    }
-  }
-
-  function toggle(id: string) {
-    const next = new Set(packed);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setPacked(next);
-  }
-
+function Packing({ onBack }: { onBack: () => void }) {
   return (
-    <>
-      <ScreenHeader
-        title="Сбор чемодана"
-        subtitle="Что взять в поездку"
-        onBack={onBack}
-      />
+    <div className="pb-28">
+      <button
+        onClick={onBack}
+        className="w-10 h-10 flex items-center justify-center text-3xl
+                   hover:opacity-60 transition"
+        style={{ color: "#18181B" }}
+        aria-label="Назад"
+      >
+        ‹
+      </button>
 
-      <div className="mt-5 rounded-3xl border border-line bg-white p-6">
-        <Field
-          label="КУДА ЕДЕТЕ"
-          value={city}
-          onChange={setCity}
-          placeholder="Например: Сочи"
-        />
+      <div
+        className="mt-8 bg-white p-10 text-center"
+        style={{ borderRadius: 28 }}
+      >
+        <p style={{ fontSize: 56, lineHeight: 1 }}>🧳</p>
 
-        <div className="mt-4">
-          <label className="block text-xs font-semibold tracking-wider text-muted mb-2">
-            НОЧЕЙ
-          </label>
-          <input
-            type="number"
-            min={1}
-            max={30}
-            value={nights}
-            onChange={(e) => setNights(e.target.value)}
-            className="w-full py-3 rounded-xl border border-line bg-cream px-4
-                       outline-none focus:border-clay transition"
-          />
-        </div>
-
-        <div className="mt-4">
-          <Field
-            label="ПОВОД"
-            value={purpose}
-            onChange={setPurpose}
-            placeholder="Например: отпуск на море"
-          />
-        </div>
-
-        <button
-          onClick={build}
-          disabled={building}
-          className="w-full py-3.5 mt-5 rounded-xl bg-ink text-white font-semibold
-                     hover:bg-ink/90 transition disabled:opacity-40"
+        <p
+          className="font-extrabold mt-6"
+          style={{ fontSize: 24, color: "#18181B" }}
         >
-          {building ? "Собираем чемодан…" : "Собрать чемодан"}
-        </button>
+          Скоро появится
+        </p>
 
-        {error ? (
-          <p className="text-sm text-red-600 text-center mt-4">{error}</p>
-        ) : null}
+        <p
+          className="mt-3"
+          style={{ fontSize: 16, color: "#71717A", lineHeight: 1.5 }}
+        >
+          Сбор чемодана уже работает в мобильном приложении.
+          В веб-версии добавим в ближайшем обновлении.
+        </p>
       </div>
-
-      {items ? (
-        <div className="mt-5 rounded-3xl border border-line bg-white p-6 mb-8">
-          <div className="flex items-center justify-between">
-            <h3 className="font-heading font-bold text-ink text-lg">
-              Что взять
-            </h3>
-            <span className="text-sm text-muted">
-              {packed.size}/{items.length}
-            </span>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {items.map((piece, i) => {
-              const done = packed.has(String(piece.id));
-              return (
-                <button
-                  key={`${piece.id}-${i}`}
-                  onClick={() => toggle(String(piece.id))}
-                  className="w-full flex items-center gap-3 p-3 rounded-2xl
-                             bg-cream hover:bg-clay/5 transition text-left"
-                >
-                  <span
-                    className={`w-6 h-6 rounded-lg border-2 flex items-center
-                                justify-center text-xs shrink-0 ${
-                                  done
-                                    ? "bg-ink border-ink text-white"
-                                    : "border-line"
-                                }`}
-                  >
-                    {done ? "✓" : ""}
-                  </span>
-
-                  <div className="w-11 h-11 rounded-xl bg-white overflow-hidden shrink-0">
-                    {piece.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={piece.image_url}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        ✦
-                      </div>
-                    )}
-                  </div>
-
-                  <span
-                    className={`text-sm ${
-                      done ? "text-muted line-through" : "text-ink"
-                    }`}
-                  >
-                    {piece.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }
 

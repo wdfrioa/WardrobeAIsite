@@ -31,17 +31,18 @@ import { useAuth } from "@/lib/AuthProvider";
 interface MenuItem {
   icon: string;
   title: string;
-  href: string;
+  /** Внешняя ссылка. */
+  href?: string;
+  /** Экран внутри веб-приложения. */
+  screen?: string;
   adminOnly?: boolean;
 }
 
 const MENU: MenuItem[] = [
-  { icon: "👤", title: "Аккаунт", href: "/account/" },
-  { icon: "☁", title: "Синхронизация", href: "/account/" },
-  { icon: "◐", title: "Внешний вид", href: "/account/" },
+  { icon: "👤", title: "Аккаунт", screen: "account" },
   { icon: "✦", title: "Wardrobe AI Premium", href: "/premium/" },
   { icon: "?", title: "Помощь", href: "/#faq" },
-  { icon: "⚙", title: "Developer Mode", href: "/admin/", adminOnly: true },
+  { icon: "⚙", title: "Панель управления", href: "/admin/", adminOnly: true },
 ];
 
 export default function WebProfile({
@@ -49,11 +50,13 @@ export default function WebProfile({
   count,
   premium,
   onBack,
+  onNavigate,
 }: {
   email: string;
   count: number;
   premium: boolean;
   onBack: () => void;
+  onNavigate: (screen: string) => void;
 }) {
   const { signOut, isAdmin, profile } = useAuth();
 
@@ -103,20 +106,12 @@ export default function WebProfile({
   const visibleMenu = MENU.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <div style={{ backgroundColor: "#F8F7F4" }} className="-mx-5 -mt-6 px-6 pt-6 pb-10">
-      {/* ---------- кнопка назад ---------- */}
-      <button
-        onClick={onBack}
-        className="w-10 h-10 rounded-xl bg-white flex items-center
-                   justify-center text-xl hover:bg-black/5 transition"
-        style={{ color: "#A1A1AA" }}
-        aria-label="Назад"
-      >
-        ‹
-      </button>
+    <div style={{ backgroundColor: "#F8F7F4" }} className="-mx-5 -mt-6 px-6 pt-6 pb-28">
+      {/* Кнопка «назад» не нужна — снизу есть меню вкладок */}
+      {void onBack}
 
       {/* ---------- шапка профиля ---------- */}
-      <div className="flex flex-col items-center mt-4">
+      <div className="flex flex-col items-center mt-2">
         <div
           className="w-26 h-26 rounded-full flex items-center justify-center
                      text-4xl font-bold overflow-hidden"
@@ -168,35 +163,61 @@ export default function WebProfile({
 
       {/* ---------- меню ---------- */}
       <div className="bg-white px-4.5" style={{ borderRadius: 23, paddingLeft: 18, paddingRight: 18 }}>
-        {visibleMenu.map((item, i) => (
-          <Link
-            key={item.title}
-            href={item.href}
-            className="flex items-center hover:bg-black/[0.02] transition -mx-4 px-4"
-            style={{
-              minHeight: 65,
-              borderBottomWidth: i < visibleMenu.length - 1 ? 1 : 0,
-              borderBottomColor: "#F1F1F1",
-              borderBottomStyle: "solid",
-            }}
-          >
-            <span
-              className="shrink-0"
-              style={{ fontSize: 18, width: 34, color: "#5E5CE6" }}
-            >
-              {item.icon}
-            </span>
+        {visibleMenu.map((item, i) => {
+          const rowStyle = {
+            minHeight: 65,
+            borderBottomWidth: i < visibleMenu.length - 1 ? 1 : 0,
+            borderBottomColor: "#F1F1F1",
+            borderBottomStyle: "solid" as const,
+          };
 
-            <span
-              className="flex-1 font-semibold"
-              style={{ fontSize: 16, color: "#27272A" }}
-            >
-              {item.title}
-            </span>
+          const inner = (
+            <>
+              <span
+                className="shrink-0"
+                style={{ fontSize: 18, width: 34, color: "#5E5CE6" }}
+              >
+                {item.icon}
+              </span>
 
-            <span style={{ fontSize: 28, color: "#A1A1AA" }}>›</span>
-          </Link>
-        ))}
+              <span
+                className="flex-1 font-semibold text-left"
+                style={{ fontSize: 16, color: "#27272A" }}
+              >
+                {item.title}
+              </span>
+
+              <span style={{ fontSize: 28, color: "#A1A1AA" }}>›</span>
+            </>
+          );
+
+          // Экран внутри приложения — обычная кнопка,
+          // внешняя страница — ссылка Next.js
+          if (item.screen) {
+            return (
+              <button
+                key={item.title}
+                onClick={() => onNavigate(item.screen as string)}
+                className="w-full flex items-center hover:bg-black/[0.02]
+                           transition -mx-4 px-4"
+                style={rowStyle}
+              >
+                {inner}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={item.title}
+              href={item.href as string}
+              className="flex items-center hover:bg-black/[0.02] transition -mx-4 px-4"
+              style={rowStyle}
+            >
+              {inner}
+            </Link>
+          );
+        })}
       </div>
 
       {/* ---------- выход ---------- */}
