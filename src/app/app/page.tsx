@@ -15,7 +15,7 @@ import AuthGate from "@/components/AuthGate";
  *  чемодан, профиль. Данные общие через Supabase.
  * ============================================================ */
 
-const API_URL = "https://wardrobeai-30q0.onrender.com";
+const API_URL = "https://ksdflortwbpimuknwpka.supabase.co/functions/v1";
 
 interface Clothing {
   id: string;
