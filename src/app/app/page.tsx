@@ -12,6 +12,7 @@ import TabBar, { type Tab } from "@/components/TabBar";
 import AccountEditor from "@/components/AccountEditor";
 import WebStylist from "@/components/WebStylist";
 import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
+import AddClothing from "@/components/AddClothing";
 
 /**
  * ============================================================
@@ -75,7 +76,8 @@ type Screen =
   | "calendar"
   | "packing"
   | "profile"
-  | "account";
+  | "account"
+  | "add";
 
 /** Фильтры гардероба — как в мобильном приложении. */
 const CATEGORIES = ["Все", "Верх", "Низ", "Обувь", "Аксессуары"];
@@ -210,6 +212,16 @@ export default function WebApp() {
         <AccountEditor onBack={() => setScreen("profile")} />
       ) : null}
 
+      {screen === "add" ? (
+        <AddClothing
+          userId={user.id}
+          onDone={() => {
+            load();
+            setScreen("wardrobe");
+          }}
+        />
+      ) : null}
+
       {screen === "wardrobe" ? <InstallHint /> : null}
 
       <TabBar
@@ -243,23 +255,10 @@ function Wardrobe({
 }) {
   /** Первая буква имени для аватара. */
   const avatarLetter = (email || "?").charAt(0).toUpperCase();
-  const [adding, setAdding] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: "",
-    category: "",
-    type: "",
-    color: "",
-    season: "",
-  });
-
   // Поиск и фильтр по категориям — как в мобильном приложении
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("Все");
 
-  const fileRef = useRef<HTMLInputElement>(null);
 
   /**
    * Отфильтрованный список.
@@ -281,79 +280,6 @@ function Wardrobe({
       .filter(Boolean)
       .some((field) => String(field).toLowerCase().includes(query));
   });
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      setPreview(base64);
-      setAnalyzing(true);
-
-      try {
-        const res = await fetch(`${API_URL}/analyze-clothing`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
-        });
-        const data = await res.json();
-
-        if (data?.success && data.result) {
-          setForm({
-            name: data.result.name ?? "",
-            category: data.result.category ?? "",
-            type: data.result.type ?? "",
-            color: data.result.color ?? "",
-            season: data.result.season ?? "",
-          });
-        }
-      } catch {
-        /* заполнит вручную */
-      } finally {
-        setAnalyzing(false);
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  async function save() {
-    if (!form.name.trim()) return;
-    setSaving(true);
-
-    let imageUrl: string | null = null;
-
-    if (preview) {
-      const blob = await (await fetch(preview)).blob();
-      const fileName = `${userId}/${Date.now()}.jpg`;
-
-      const { error } = await supabase.storage
-        .from("clothes")
-        .upload(fileName, blob, { contentType: "image/jpeg" });
-
-      if (!error) {
-        const { data } = supabase.storage.from("clothes").getPublicUrl(fileName);
-        imageUrl = data.publicUrl;
-      }
-    }
-
-    await supabase.from("clothes").insert({
-      user_id: userId,
-      name: form.name.trim(),
-      category: form.category.trim(),
-      type: form.type.trim(),
-      color: form.color.trim(),
-      season: form.season.trim(),
-      image_url: imageUrl,
-    });
-
-    setForm({ name: "", category: "", type: "", color: "", season: "" });
-    setPreview(null);
-    setAdding(false);
-    setSaving(false);
-    onReload();
-  }
 
   async function remove(id: string) {
     await supabase.from("clothes").delete().eq("id", id);
@@ -446,90 +372,6 @@ function Wardrobe({
           );
         })}
       </div>
-
-      {/* форма добавления */}
-      {adding ? (
-        <div className="mt-5 rounded-3xl border border-line bg-white p-6">
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={onFile}
-            className="hidden"
-          />
-
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="w-full aspect-video rounded-2xl bg-cream border border-line
-                       flex flex-col items-center justify-center gap-2
-                       hover:bg-clay/5 transition overflow-hidden"
-          >
-            {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <>
-                <span className="text-3xl">📷</span>
-                <span className="text-sm text-muted">
-                  Сфотографировать или выбрать
-                </span>
-              </>
-            )}
-          </button>
-
-          {analyzing ? (
-            <p className="text-center text-sm text-clay-dark mt-4">
-              ИИ распознаёт вещь…
-            </p>
-          ) : null}
-
-          <div className="mt-5 space-y-3">
-            {(
-              [
-                ["name", "Название"],
-                ["category", "Категория"],
-                ["type", "Тип"],
-                ["color", "Цвет"],
-                ["season", "Сезон"],
-              ] as [keyof typeof form, string][]
-            ).map(([key, label]) => (
-              <div key={key}>
-                <label className="block text-xs font-semibold tracking-wider text-muted mb-1.5">
-                  {label.toUpperCase()}
-                </label>
-                <input
-                  value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full py-2.5 rounded-xl border border-line bg-cream px-3.5
-                             outline-none focus:border-clay transition text-sm"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 mt-5">
-            <button
-              onClick={() => {
-                setAdding(false);
-                setPreview(null);
-              }}
-              className="flex-1 py-3 rounded-xl border border-line text-ink
-                         font-medium hover:bg-cream transition"
-            >
-              Отмена
-            </button>
-            <button
-              onClick={save}
-              disabled={saving || !form.name.trim()}
-              className="flex-1 py-3 rounded-xl bg-ink text-white font-semibold
-                         hover:bg-ink/90 transition disabled:opacity-40"
-            >
-              {saving ? "Сохраняем…" : "Сохранить"}
-            </button>
-          </div>
-        </div>
-      ) : null}
 
       {/* ---------- СПИСОК ВЕЩЕЙ ---------- */}
       {clothes.length === 0 ? (
@@ -624,7 +466,7 @@ function Wardrobe({
         <Fab
           emoji="+"
           label="Добавить"
-          onClick={() => setAdding(!adding)}
+          onClick={() => onNavigate("add")}
           big
         />
       </div>
