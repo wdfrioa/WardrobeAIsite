@@ -6,6 +6,8 @@ import Link from "next/link";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useAuth } from "@/lib/AuthProvider";
 import AuthGate from "@/components/AuthGate";
+import WebProfile from "@/components/WebProfile";
+import { getWeather, weatherEmoji, type Weather } from "@/lib/webWeather";
 
 /**
  * ============================================================
@@ -15,7 +17,35 @@ import AuthGate from "@/components/AuthGate";
  *  чемодан, профиль. Данные общие через Supabase.
  * ============================================================ */
 
+/** Supabase Edge Functions — работают из России без VPN. */
 const API_URL = "https://ksdflortwbpimuknwpka.supabase.co/functions/v1";
+
+/**
+ * Убрать картинки перед отправкой в AI.
+ *
+ * Замер: гардероб с фото весит ~1 МБ и грузится 54 секунды,
+ * без фото — 2 КБ и 4 секунды. Серверу картинки не нужны,
+ * он подбирает образ по названию и категории, возвращает id.
+ */
+function slim(clothes: Clothing[]) {
+  return clothes.map((c) => ({
+    id: c.id,
+    name: c.name,
+    category: c.category,
+    type: c.type,
+    color: c.color,
+    season: c.season,
+  }));
+}
+
+/** Вернуть картинки обратно по id. */
+function restore(items: OutfitItem[], clothes: Clothing[]): OutfitItem[] {
+  if (!Array.isArray(items)) return [];
+  return items.map((it) => {
+    const full = clothes.find((c) => String(c.id) === String(it?.id));
+    return full ? { ...it, image_url: full.image_url ?? it.image_url } : it;
+  });
+}
 
 interface Clothing {
   id: string;
@@ -43,6 +73,14 @@ export default function WebApp() {
   const [screen, setScreen] = useState<Screen>("wardrobe");
   const [clothes, setClothes] = useState<Clothing[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Погода берётся один раз наверху и передаётся во все экраны,
+  // чтобы AI учитывал её при подборе.
+  const [weather, setWeather] = useState<Weather | null>(null);
+
+  useEffect(() => {
+    getWeather().then(setWeather);
+  }, []);
 
   const load = useCallback(async () => {
     if (!user) {
@@ -104,17 +142,23 @@ export default function WebApp() {
           onReload={load}
           onNavigate={setScreen}
           premium={isPremium}
+          weather={weather}
         />
       ) : null}
 
       {screen === "stylist" ? (
-        <Stylist clothes={clothes} onBack={() => setScreen("wardrobe")} />
+        <Stylist
+          clothes={clothes}
+          weather={weather}
+          onBack={() => setScreen("wardrobe")}
+        />
       ) : null}
 
       {screen === "calendar" ? (
         <Calendar
           clothes={clothes}
           premium={isPremium}
+          weather={weather}
           onBack={() => setScreen("wardrobe")}
         />
       ) : null}
@@ -128,7 +172,7 @@ export default function WebApp() {
       ) : null}
 
       {screen === "profile" ? (
-        <Profile
+        <WebProfile
           email={user.email ?? ""}
           count={clothes.length}
           premium={isPremium}
@@ -151,12 +195,14 @@ function Wardrobe({
   onReload,
   onNavigate,
   premium,
+  weather,
 }: {
   clothes: Clothing[];
   userId: string;
   onReload: () => void;
   onNavigate: (s: Screen) => void;
   premium: boolean;
+  weather: Weather | null;
 }) {
   const [adding, setAdding] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -252,11 +298,30 @@ function Wardrobe({
 
   return (
     <>
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="font-heading text-2xl font-bold text-ink">Гардероб</h1>
           <p className="text-muted text-sm mt-0.5">{clothes.length} вещей</p>
         </div>
+
+        {weather ? (
+          <div
+            className="flex items-center gap-2.5 rounded-2xl border border-line
+                       bg-white px-3.5 py-2.5 shrink-0"
+          >
+            <span className="text-2xl leading-none">
+              {weatherEmoji(weather.main)}
+            </span>
+            <div className="text-right">
+              <p className="font-semibold text-ink leading-tight">
+                {Math.round(weather.temperature)}°
+              </p>
+              <p className="text-[11px] text-muted leading-tight">
+                {weather.city || weather.description}
+              </p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* форма добавления */}
@@ -483,9 +548,11 @@ function Fab({
 
 function Stylist({
   clothes,
+  weather,
   onBack,
 }: {
   clothes: Clothing[];
+  weather: Weather | null;
   onBack: () => void;
 }) {
   const [occasion, setOccasion] = useState("");
@@ -513,10 +580,10 @@ function Stylist({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gender: "male",
-          clothes,
+          clothes: slim(clothes),
           occasion: occasion.trim(),
           wish: wish.trim(),
-          weather: null,
+          weather,
         }),
       });
 
@@ -524,7 +591,7 @@ function Stylist({
 
       if (data?.success && data.result?.items?.length) {
         setOutfit({
-          items: data.result.items,
+          items: restore(data.result.items, clothes),
           explanation: data.result.explanation ?? "",
         });
       } else {
@@ -609,10 +676,12 @@ function Stylist({
 function Calendar({
   clothes,
   premium,
+  weather,
   onBack,
 }: {
   clothes: Clothing[];
   premium: boolean;
+  weather: Weather | null;
   onBack: () => void;
 }) {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
@@ -640,17 +709,17 @@ function Calendar({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gender: "male",
-          clothes,
+          clothes: slim(clothes),
           occasion: `${event.trim()} (${date})`,
           wish: "Учти дату и время года.",
-          weather: null,
+          weather,
         }),
       });
 
       const data = await res.json();
 
       if (data?.success && data.result?.items?.length) {
-        setOutfit(data.result.items);
+        setOutfit(restore(data.result.items, clothes));
       } else {
         setError(data?.error ?? "Не удалось собрать образ");
       }
@@ -677,8 +746,16 @@ function Calendar({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full py-3 rounded-xl border border-line bg-cream px-4
-                     outline-none focus:border-clay transition"
+          /*
+           * appearance-none + min-w-0 + box-border лечат баг Safari на iOS:
+           * поле type="date" имеет свой встроенный размер и вылезает
+           * за границы блока, игнорируя ширину контейнера.
+           */
+          className="block w-full max-w-full min-w-0 box-border py-3
+                     rounded-xl border border-line bg-cream px-4
+                     appearance-none outline-none focus:border-clay transition
+                     text-ink text-base"
+          style={{ WebkitAppearance: "none" }}
         />
 
         <div className="mt-4">
@@ -767,11 +844,12 @@ function Packing({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gender: "male",
-          clothes,
+          clothes: slim(clothes),
           occasion: `Поездка в ${city.trim()} на ${nights} ночей. ${purpose.trim()}`,
           wish:
             "Подбери вещи на всю поездку, а не один образ. " +
             "Учти слои и универсальность вещей.",
+          // Погода в чемодане своя — по городу назначения, не по текущему
           weather: null,
         }),
       });
@@ -779,7 +857,7 @@ function Packing({
       const data = await res.json();
 
       if (data?.success && data.result?.items?.length) {
-        setItems(data.result.items);
+        setItems(restore(data.result.items, clothes));
         setPacked(new Set());
       } else {
         setError(data?.error ?? "Не удалось собрать чемодан");
@@ -917,76 +995,6 @@ function Packing({
 }
 
 /* ============================================================
-   ПРОФИЛЬ
-   ============================================================ */
-
-function Profile({
-  email,
-  count,
-  premium,
-  onBack,
-}: {
-  email: string;
-  count: number;
-  premium: boolean;
-  onBack: () => void;
-}) {
-  const { signOut } = useAuth();
-
-  return (
-    <>
-      <ScreenHeader title="Профиль" onBack={onBack} />
-
-      <div className="mt-5 flex items-center gap-4">
-        <div
-          className="w-16 h-16 rounded-2xl bg-clay/15 flex items-center
-                     justify-center text-2xl font-bold text-clay"
-        >
-          {(email || "?").charAt(0).toUpperCase()}
-        </div>
-
-        <div className="min-w-0">
-          <p className="font-medium text-ink truncate">{email}</p>
-          <span
-            className={`inline-block text-xs font-semibold px-2.5 py-1
-                        rounded-lg mt-1.5 ${
-                          premium
-                            ? "bg-ink text-white"
-                            : "bg-clay/10 text-clay-dark"
-                        }`}
-          >
-            {premium ? "💎 Premium" : "Free"}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-6 rounded-3xl border border-line bg-white p-6">
-        <Row label="Вещей в гардеробе" value={String(count)} />
-        <Row label="Статус" value={premium ? "Premium" : "Бесплатный"} />
-      </div>
-
-      <div className="mt-4 space-y-2.5">
-        <Link
-          href="/account/"
-          className="block w-full py-3.5 rounded-xl border border-line bg-white
-                     text-center font-medium text-ink hover:bg-cream transition"
-        >
-          Личный кабинет и подписка
-        </Link>
-
-        <button
-          onClick={signOut}
-          className="w-full py-3.5 rounded-xl border border-line bg-white
-                     text-red-600 font-medium hover:bg-red-50 transition"
-        >
-          Выйти
-        </button>
-      </div>
-    </>
-  );
-}
-
-/* ============================================================
    ОБЩИЕ ЭЛЕМЕНТЫ
    ============================================================ */
 
@@ -1080,15 +1088,6 @@ function ItemRow({ item }: { item: OutfitItem }) {
           {[item.type, item.color].filter(Boolean).join(" · ")}
         </p>
       </div>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between py-2">
-      <span className="text-muted text-sm">{label}</span>
-      <span className="text-ink font-medium text-sm">{value}</span>
     </div>
   );
 }
