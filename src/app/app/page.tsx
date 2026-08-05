@@ -67,6 +67,9 @@ interface OutfitItem {
 
 type Screen = "wardrobe" | "stylist" | "calendar" | "packing" | "profile";
 
+/** Фильтры гардероба — как в мобильном приложении. */
+const CATEGORIES = ["Все", "Верх", "Низ", "Обувь", "Аксессуары"];
+
 export default function WebApp() {
   const { user, loading: authLoading, isPremium } = useAuth();
 
@@ -139,6 +142,7 @@ export default function WebApp() {
         <Wardrobe
           clothes={clothes}
           userId={user.id}
+          email={user.email ?? ""}
           onReload={load}
           onNavigate={setScreen}
           premium={isPremium}
@@ -192,6 +196,7 @@ export default function WebApp() {
 function Wardrobe({
   clothes,
   userId,
+  email,
   onReload,
   onNavigate,
   premium,
@@ -199,11 +204,14 @@ function Wardrobe({
 }: {
   clothes: Clothing[];
   userId: string;
+  email: string;
   onReload: () => void;
   onNavigate: (s: Screen) => void;
   premium: boolean;
   weather: Weather | null;
 }) {
+  /** Первая буква имени для аватара. */
+  const avatarLetter = (email || "?").charAt(0).toUpperCase();
   const [adding, setAdding] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -216,7 +224,32 @@ function Wardrobe({
     season: "",
   });
 
+  // Поиск и фильтр по категориям — как в мобильном приложении
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("Все");
+
   const fileRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Отфильтрованный список.
+   *
+   * Поиск идёт по названию, типу и цвету — так пользователю
+   * проще найти вещь, даже если он не помнит точное название.
+   */
+  const visible = clothes.filter((item) => {
+    const byCategory =
+      filter === "Все" ||
+      (item.category ?? "").toLowerCase().includes(filter.toLowerCase());
+
+    if (!byCategory) return false;
+
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+
+    return [item.name, item.type, item.color]
+      .filter(Boolean)
+      .some((field) => String(field).toLowerCase().includes(query));
+  });
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -298,30 +331,89 @@ function Wardrobe({
 
   return (
     <>
+      {/* ---------- ШАПКА: название + аватар ---------- */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-heading text-2xl font-bold text-ink">Гардероб</h1>
-          <p className="text-muted text-sm mt-0.5">{clothes.length} вещей</p>
+          <h1 className="font-heading text-[34px] leading-none font-extrabold text-ink">
+            Wardrobe
+          </h1>
+          <p className="text-muted text-[15px] mt-2">Твоя коллекция одежды</p>
         </div>
 
-        {weather ? (
-          <div
-            className="flex items-center gap-2.5 rounded-2xl border border-line
-                       bg-white px-3.5 py-2.5 shrink-0"
-          >
-            <span className="text-2xl leading-none">
-              {weatherEmoji(weather.main)}
-            </span>
-            <div className="text-right">
-              <p className="font-semibold text-ink leading-tight">
-                {Math.round(weather.temperature)}°
-              </p>
-              <p className="text-[11px] text-muted leading-tight">
-                {weather.city || weather.description}
-              </p>
-            </div>
+        <button
+          onClick={() => onNavigate("profile")}
+          className="w-12 h-12 rounded-full overflow-hidden shrink-0
+                     bg-clay/15 flex items-center justify-center
+                     text-lg font-bold text-clay
+                     hover:opacity-80 transition"
+          aria-label="Профиль"
+        >
+          {avatarLetter}
+        </button>
+      </div>
+
+      {/* ---------- ПОГОДА ---------- */}
+      {weather ? (
+        <div className="mt-6 rounded-3xl bg-white p-5 flex items-center gap-4">
+          <span className="text-[42px] leading-none shrink-0">
+            {weatherEmoji(weather.main)}
+          </span>
+
+          <div className="min-w-0">
+            <p className="font-bold text-ink text-[17px] leading-tight">
+              {weather.city || "Ваш город"}
+            </p>
+
+            <p className="mt-1 leading-tight">
+              <span className="font-extrabold text-ink text-[22px]">
+                {Math.round(weather.temperature)}°C
+              </span>
+              <span className="text-muted text-[15px]">
+                {" "}
+                (Ощущается как {Math.round(weather.feels)}°C)
+              </span>
+            </p>
+
+            <p className="text-muted text-[15px] mt-1 leading-tight first-letter:uppercase">
+              {weather.description}
+            </p>
           </div>
-        ) : null}
+        </div>
+      ) : null}
+
+      {/* ---------- ПОИСК ---------- */}
+      <div className="mt-4">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Поиск по гардеробу…"
+          className="w-full rounded-3xl bg-white px-6 py-4 text-[16px]
+                     text-ink placeholder:text-muted/70
+                     outline-none border border-transparent
+                     focus:border-clay/40 transition"
+        />
+      </div>
+
+      {/* ---------- ФИЛЬТРЫ ПО КАТЕГОРИЯМ ---------- */}
+      <div className="mt-4 flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1
+                      [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {CATEGORIES.map((category) => {
+          const active = filter === category;
+          return (
+            <button
+              key={category}
+              onClick={() => setFilter(category)}
+              className={`px-6 py-3 rounded-full text-[15px] font-semibold
+                          shrink-0 transition ${
+                            active
+                              ? "bg-ink text-white"
+                              : "bg-white text-ink hover:bg-black/[0.03]"
+                          }`}
+            >
+              {category}
+            </button>
+          );
+        })}
       </div>
 
       {/* форма добавления */}
@@ -408,7 +500,7 @@ function Wardrobe({
         </div>
       ) : null}
 
-      {/* список */}
+      {/* ---------- СПИСОК ВЕЩЕЙ ---------- */}
       {clothes.length === 0 ? (
         <div className="text-center py-16">
           <p className="text-4xl">👕</p>
@@ -417,12 +509,20 @@ function Wardrobe({
             Нажмите + и добавьте первую вещь
           </p>
         </div>
+      ) : visible.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-4xl">🔍</p>
+          <p className="font-medium text-ink mt-4">Ничего не найдено</p>
+          <p className="text-muted text-sm mt-1">
+            Попробуйте изменить запрос или категорию
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 mt-5 pb-28">
-          {clothes.map((item) => (
+        <div className="grid grid-cols-2 gap-4 mt-5 pb-32">
+          {visible.map((item) => (
             <div
               key={item.id}
-              className="relative rounded-2xl border border-line bg-white overflow-hidden group"
+              className="relative rounded-3xl bg-white overflow-hidden group"
             >
               <div className="aspect-square bg-cream">
                 {item.image_url ? (
@@ -433,7 +533,7 @@ function Wardrobe({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">
+                  <div className="w-full h-full flex items-center justify-center text-3xl">
                     👕
                   </div>
                 )}
@@ -441,26 +541,52 @@ function Wardrobe({
 
               <button
                 onClick={() => remove(item.id)}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90
-                           flex items-center justify-center text-sm
-                           opacity-0 group-hover:opacity-100 transition"
+                className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white
+                           flex items-center justify-center text-base shadow-md
+                           opacity-0 group-hover:opacity-100
+                           max-md:opacity-100 transition"
                 aria-label="Удалить"
               >
                 🗑
               </button>
 
-              <div className="p-3">
-                <p className="font-medium text-ink text-sm truncate">
+              <div className="p-4">
+                <p className="font-bold text-ink text-[15px] leading-snug">
                   {item.name}
                 </p>
-                <p className="text-muted text-xs mt-0.5 truncate">
-                  {[item.type, item.color].filter(Boolean).join(" · ") || "—"}
-                </p>
+                {[item.type, item.color].filter(Boolean).length > 0 ? (
+                  <p className="text-muted text-[13px] mt-1 truncate">
+                    {[item.type, item.color].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* ---------- БАННЕР «ОБРАЗЫ НА НЕДЕЛЮ» ---------- */}
+      <button
+        onClick={() => onNavigate("calendar")}
+        className="fixed bottom-6 left-5 right-24 z-40 max-w-[calc(32rem-6rem)]
+                   mx-auto md:left-auto md:right-24
+                   flex items-center gap-3 rounded-3xl bg-ink
+                   px-5 py-3.5 text-left shadow-xl
+                   hover:bg-ink/90 transition"
+      >
+        <span className="text-2xl shrink-0">📅</span>
+
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold text-white text-[15px] leading-tight">
+            Образы на неделю
+          </span>
+          <span className="block text-white/60 text-[12px] leading-tight mt-0.5">
+            AI составит комплекты на 7 дней
+          </span>
+        </span>
+
+        <span className="text-white/60 text-xl shrink-0">›</span>
+      </button>
 
       {/* ---------- КРУГЛЫЕ КНОПКИ ---------- */}
       <div className="fixed bottom-6 right-5 flex flex-col items-center gap-3 z-40">
