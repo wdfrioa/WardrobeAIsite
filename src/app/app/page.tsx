@@ -596,37 +596,17 @@ function Wardrobe({
         </div>
       )}
 
-      {/* ---------- БАННЕР «ОБРАЗЫ НА НЕДЕЛЮ» ---------- */}
-      <button
-        onClick={() => onNavigate("calendar")}
-        className="fixed bottom-6 left-5 right-24 z-40 max-w-[calc(32rem-6rem)]
-                   mx-auto md:left-auto md:right-24
-                   flex items-center gap-3 rounded-3xl bg-ink
-                   px-5 py-3.5 text-left shadow-xl
-                   hover:bg-ink/90 transition"
+      {/* ---------- КРУГЛЫЕ КНОПКИ ----------
+
+           bottom-24 вместо bottom-6: нижнее меню занимает ~68px,
+           плюс safe-area на iPhone. Иначе меню перекрывает «+».
+
+           Профиль и стилист убраны — они есть в нижнем меню.
+      */}
+      <div
+        className="fixed right-5 flex flex-col items-center gap-3 z-40"
+        style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
       >
-        <span className="text-2xl shrink-0">📅</span>
-
-        <span className="min-w-0 flex-1">
-          <span className="block font-bold text-white text-[15px] leading-tight">
-            Образы на неделю
-          </span>
-          <span className="block text-white/60 text-[12px] leading-tight mt-0.5">
-            AI составит комплекты на 7 дней
-          </span>
-        </span>
-
-        <span className="text-white/60 text-xl shrink-0">›</span>
-      </button>
-
-      {/* ---------- КРУГЛЫЕ КНОПКИ ---------- */}
-      <div className="fixed bottom-6 right-5 flex flex-col items-center gap-3 z-40">
-        <Fab
-          emoji="👤"
-          label="Профиль"
-          onClick={() => onNavigate("profile")}
-          light
-        />
         <Fab
           emoji="🧳"
           label="Чемодан"
@@ -640,12 +620,6 @@ function Wardrobe({
           onClick={() => onNavigate("calendar")}
           light
           pro={!premium}
-        />
-        <Fab
-          emoji="✨"
-          label="Стилист"
-          onClick={() => onNavigate("stylist")}
-          light
         />
         <Fab
           emoji="+"

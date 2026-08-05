@@ -31,6 +31,11 @@ export interface Profile {
   premium_source: string | null;
   premium_expires_at: string | null;
   role: string;
+
+  /** Поля из supabase/profile-fields.sql */
+  name: string | null;
+  avatar_url: string | null;
+  gender: string | null;
 }
 
 interface AuthValue {
@@ -61,11 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, email, is_premium, premium_source, premium_expires_at, role")
+      .select("*")
       .eq("id", userId)
       .single();
 
-    setProfile((data as Profile) ?? null);
+    setProfile((data as unknown as Profile) ?? null);
   }, []);
 
   const refresh = useCallback(async () => {

@@ -103,6 +103,9 @@ export default function WebProfile({
     (email ? email.split("@")[0] : "") ||
     "Wardrobe User";
 
+  /** Фото профиля, если загружено. */
+  const avatarUrl = (profile as any)?.avatar_url as string | undefined;
+
   const visibleMenu = MENU.filter((item) => !item.adminOnly || isAdmin);
 
   return (
@@ -113,7 +116,7 @@ export default function WebProfile({
       {/* ---------- шапка профиля ---------- */}
       <div className="flex flex-col items-center mt-2">
         <div
-          className="w-26 h-26 rounded-full flex items-center justify-center
+          className="rounded-full flex items-center justify-center
                      text-4xl font-bold overflow-hidden"
           style={{
             width: 104,
@@ -122,7 +125,16 @@ export default function WebProfile({
             color: "#5E5CE6",
           }}
         >
-          {name.charAt(0).toUpperCase()}
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatarUrl}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            name.charAt(0).toUpperCase()
+          )}
         </div>
 
         <p
@@ -199,7 +211,7 @@ export default function WebProfile({
                 key={item.title}
                 onClick={() => onNavigate(item.screen as string)}
                 className="w-full flex items-center hover:bg-black/[0.02]
-                           transition -mx-4 px-4"
+                           transition"
                 style={rowStyle}
               >
                 {inner}
@@ -211,7 +223,7 @@ export default function WebProfile({
             <Link
               key={item.title}
               href={item.href as string}
-              className="flex items-center hover:bg-black/[0.02] transition -mx-4 px-4"
+              className="flex items-center hover:bg-black/[0.02] transition"
               style={rowStyle}
             >
               {inner}
