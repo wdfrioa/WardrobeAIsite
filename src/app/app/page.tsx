@@ -95,7 +95,10 @@ export default function WebApp() {
   const [weather, setWeather] = useState<Weather | null>(null);
 
   useEffect(() => {
-    getWeather().then(setWeather);
+    // Погода не критична — ошибку глотаем, чтобы не мешала интерфейсу
+    getWeather()
+      .then(setWeather)
+      .catch(() => setWeather(null));
   }, []);
 
   // Пол из профиля — AI не должен предлагать мужчинам платья.
@@ -109,14 +112,20 @@ export default function WebApp() {
       return;
     }
 
-    const { data } = await supabase
-      .from("clothes")
-      .select("id, name, category, type, color, season, image_url")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+    try {
+      const { data } = await supabase
+        .from("clothes")
+        .select("id, name, category, type, color, season, image_url")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
-    setClothes((data as Clothing[]) ?? []);
-    setLoading(false);
+      setClothes((data as Clothing[]) ?? []);
+    } catch {
+      // Нет связи — покажем пустой гардероб вместо вечной загрузки
+      setClothes([]);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   useEffect(() => {

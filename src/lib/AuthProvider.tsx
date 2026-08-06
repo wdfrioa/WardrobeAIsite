@@ -67,13 +67,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .single();
 
-    setProfile((data as unknown as Profile) ?? null);
+      setProfile((data as unknown as Profile) ?? null);
+    } catch {
+      // Профиль не пришёл — не страшно, приложение работает
+      // с настройками по умолчанию
+    }
   }, []);
 
   const refresh = useCallback(async () => {
@@ -82,23 +87,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const {
-      data: { user: current },
-    } = await supabase.auth.getUser();
+    try {
+      /*
+       * getSession() читает сессию из localStorage и НЕ ходит в сеть.
+       * getUser() каждый раз спрашивал сервер — на медленном мобильном
+       * интернете запрос мог висеть минутами, и экран застревал
+       * на «Загрузка…». На Wi-Fi это было незаметно.
+       */
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-    if (current) {
-      setUser({ id: current.id, email: current.email });
-      await loadProfile(current.id);
-    } else {
+      const current = session?.user;
+
+      if (current) {
+        setUser({ id: current.id, email: current.email });
+        // Профиль грузим в фоне: без него интерфейс уже можно показать
+        loadProfile(current.id);
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+    } catch {
+      // Нет связи — покажем экран входа, а не вечную загрузку
       setUser(null);
       setProfile(null);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [loadProfile]);
 
   useEffect(() => {
-    refresh();
+    /*
+     * Страховка от вечной «Загрузки…».
+     *
+     * Если сеть очень медленная или запрос завис, через 8 секунд
+     * снимаем блокировку и показываем интерфейс. Пользователь
+     * увидит экран входа и сможет попробовать снова — это лучше,
+     * чем бесконечный спиннер.
+     */
+    const failsafe = setTimeout(() => setLoading(false), 8000);
+
+    refresh().finally(() => clearTimeout(failsafe));
 
     if (!isSupabaseConfigured) return;
 
