@@ -65,17 +65,24 @@ export default function AdminPage() {
         ? new Date(Date.now() + days * 86400000).toISOString()
         : null;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .update({
         is_premium: active,
         premium_source: "manual",
         premium_expires_at: expiresAt,
       })
-      .eq("id", row.id);
+      .eq("id", row.id)
+      .select("id");
 
     if (error) {
       alert(`Не удалось обновить: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      alert(
+        "База не приняла изменение.\n\n" +
+          "Скорее всего, не выполнен скрипт fix-beta-trigger.sql " +
+          "или у вас нет роли admin."
+      );
     } else {
       setRows((prev) =>
         prev.map((item) =>
@@ -98,17 +105,35 @@ export default function AdminPage() {
   async function setBeta(row: Row, active: boolean) {
     setBusy(row.id);
 
-    const { error } = await supabase
+    /*
+     * .select() после update обязателен.
+     *
+     * Без него Supabase возвращает успех, даже если строка
+     * не изменилась — например, её откатил триггер защиты
+     * или не пустила RLS-политика. Интерфейс показывал, что
+     * бета выдана, а после «Обновить» флаг пропадал.
+     *
+     * С .select() приходит реально записанная строка: если
+     * массив пустой — значит изменение не применилось.
+     */
+    const { data, error } = await supabase
       .from("profiles")
       .update({ is_beta: active })
-      .eq("id", row.id);
+      .eq("id", row.id)
+      .select("id, is_beta");
 
     if (error) {
       alert(`Не удалось обновить: ${error.message}`);
+    } else if (!data || data.length === 0) {
+      alert(
+        "База не приняла изменение.\n\n" +
+          "Скорее всего, не выполнен скрипт fix-beta-trigger.sql " +
+          "или у вас нет роли admin."
+      );
     } else {
       setRows((prev) =>
         prev.map((item) =>
-          item.id === row.id ? { ...item, is_beta: active } : item
+          item.id === row.id ? { ...item, is_beta: data[0].is_beta } : item
         )
       );
     }
