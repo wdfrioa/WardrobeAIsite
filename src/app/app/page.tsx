@@ -13,7 +13,7 @@ import AccountEditor from "@/components/AccountEditor";
 import WebStylist from "@/components/WebStylist";
 import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
 import AddClothing from "@/components/AddClothing";
-import { generateWardrobe, drawItem } from "@/lib/demoWardrobe";
+import { generateWardrobe } from "@/lib/demoWardrobe";
 
 /**
  * ============================================================
@@ -303,23 +303,26 @@ function Wardrobe({
   async function generateDemo() {
     setGenerating(true);
 
-    const items = generateWardrobe(gender, 14);
+    try {
+      // Берёт фото из бакета `demo`, если они загружены,
+      // иначе рисует силуэты
+      const items = await generateWardrobe(gender, 14);
 
-    // Картинки рисуются локально в data:URL — сеть не нужна
-    const rows = items.map((item) => ({
-      user_id: userId,
-      name: item.name,
-      category: item.category,
-      type: item.type,
-      color: item.color,
-      season: item.season,
-      image_url: drawItem(item.shape, item.color),
-    }));
+      const rows = items.map((item) => ({
+        user_id: userId,
+        name: item.name,
+        category: item.category,
+        type: item.type,
+        color: item.color,
+        season: item.season,
+        image_url: item.imageUrl,
+      }));
 
-    await supabase.from("clothes").insert(rows);
-
-    setGenerating(false);
-    onReload();
+      await supabase.from("clothes").insert(rows);
+    } finally {
+      setGenerating(false);
+      onReload();
+    }
   }
 
   async function remove(id: string) {
