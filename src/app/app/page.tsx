@@ -15,6 +15,8 @@ import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
 import AddClothing from "@/components/AddClothing";
 import { generateWardrobe } from "@/lib/demoWardrobe";
 import { initTelegram, isTelegram } from "@/lib/telegram";
+import WebPacking from "@/components/WebPacking";
+import WebShopping from "@/components/WebShopping";
 
 /**
  * ============================================================
@@ -79,7 +81,8 @@ type Screen =
   | "packing"
   | "profile"
   | "account"
-  | "add";
+  | "add"
+  | "shopping";
 
 /** Фильтры гардероба — как в мобильном приложении. */
 const CATEGORIES = ["Все", "Верх", "Низ", "Обувь", "Аксессуары"];
@@ -184,6 +187,7 @@ export default function WebApp() {
           clothes={clothes}
           userId={user.id}
           email={user.email ?? ""}
+          avatarUrl={((profile as any)?.avatar_url as string) ?? null}
           onReload={load}
           onNavigate={setScreen}
           premium={isPremium}
@@ -213,7 +217,27 @@ export default function WebApp() {
       ) : null}
 
       {screen === "packing" ? (
-        <Packing onBack={() => setScreen("wardrobe")} />
+        isPremium ? (
+          <WebPacking
+            clothes={clothes}
+            gender={gender}
+            onBack={() => setScreen("wardrobe")}
+          />
+        ) : (
+          <PremiumLock
+            title="Сбор чемодана"
+            emoji="🧳"
+            onBack={() => setScreen("wardrobe")}
+          />
+        )
+      ) : null}
+
+      {screen === "shopping" ? (
+        <WebShopping
+          clothes={clothes}
+          premium={isPremium}
+          onBack={() => setScreen("wardrobe")}
+        />
       ) : null}
 
       {screen === "profile" ? (
@@ -258,6 +282,7 @@ function Wardrobe({
   clothes,
   userId,
   email,
+  avatarUrl,
   onReload,
   onNavigate,
   premium,
@@ -268,6 +293,7 @@ function Wardrobe({
   clothes: Clothing[];
   userId: string;
   email: string;
+  avatarUrl: string | null;
   onReload: () => void;
   onNavigate: (s: Screen) => void;
   premium: boolean;
@@ -355,7 +381,12 @@ function Wardrobe({
                      hover:opacity-80 transition"
           aria-label="Профиль"
         >
-          {avatarLetter}
+          {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            avatarLetter
+          )}
         </button>
       </div>
 
@@ -530,6 +561,13 @@ function Wardrobe({
         className="fixed right-5 flex flex-col items-center gap-3 z-40"
         style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
       >
+        <Fab
+          emoji="🛍"
+          label="Что докупить"
+          onClick={() => onNavigate("shopping")}
+          light
+          pro={!premium}
+        />
         <Fab
           emoji="🧳"
           label="Чемодан"
@@ -768,48 +806,6 @@ function Calendar({
       onOpen={() => {}}
       onBack={onBack}
     />
-  );
-}
-
-/* ============================================================
-   ЧЕМОДАН — СКОРО
-   ============================================================ */
-
-function Packing({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="pb-28">
-      <button
-        onClick={onBack}
-        className="w-10 h-10 flex items-center justify-center text-3xl
-                   hover:opacity-60 transition"
-        style={{ color: "#18181B" }}
-        aria-label="Назад"
-      >
-        ‹
-      </button>
-
-      <div
-        className="mt-8 bg-white p-10 text-center"
-        style={{ borderRadius: 28 }}
-      >
-        <p style={{ fontSize: 56, lineHeight: 1 }}>🧳</p>
-
-        <p
-          className="font-extrabold mt-6"
-          style={{ fontSize: 24, color: "#18181B" }}
-        >
-          Скоро появится
-        </p>
-
-        <p
-          className="mt-3"
-          style={{ fontSize: 16, color: "#71717A", lineHeight: 1.5 }}
-        >
-          Сбор чемодана уже работает в мобильном приложении.
-          В веб-версии добавим в ближайшем обновлении.
-        </p>
-      </div>
-    </div>
   );
 }
 
