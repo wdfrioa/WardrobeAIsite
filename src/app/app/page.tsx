@@ -14,6 +14,7 @@ import WebStylist from "@/components/WebStylist";
 import WebCalendar, { type PlannedOutfit } from "@/components/WebCalendar";
 import AddClothing from "@/components/AddClothing";
 import { generateWardrobe } from "@/lib/demoWardrobe";
+import { initTelegram, isTelegram } from "@/lib/telegram";
 
 /**
  * ============================================================
@@ -93,6 +94,11 @@ export default function WebApp() {
   // Погода берётся один раз наверху и передаётся во все экраны,
   // чтобы AI учитывал её при подборе.
   const [weather, setWeather] = useState<Weather | null>(null);
+
+  useEffect(() => {
+    // Если открыто внутри Telegram — развернуть окно, задать цвета
+    initTelegram();
+  }, []);
 
   useEffect(() => {
     // Погода не критична — ошибку глотаем, чтобы не мешала интерфейсу
@@ -996,17 +1002,32 @@ function InstallHint() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  /*
+   * Внутри Telegram ссылка «На главную» не нужна: там нет
+   * вкладок браузера, и уход на лендинг выглядит как поломка.
+   *
+   * Проверяем после монтирования — на сервере объекта Telegram
+   * не существует, и разметка должна совпасть.
+   */
+  const [inTelegram, setInTelegram] = useState(false);
+
+  useEffect(() => {
+    setInTelegram(isTelegram());
+  }, []);
+
   return (
     <main className="min-h-screen bg-cream px-5 py-8">
       <div className="max-w-lg mx-auto">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-muted hover:text-ink
-                     transition mb-6 text-sm font-medium"
-        >
-          <span>←</span>
-          <span>На главную</span>
-        </Link>
+        {!inTelegram ? (
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-muted hover:text-ink
+                       transition mb-6 text-sm font-medium"
+          >
+            <span>←</span>
+            <span>На главную</span>
+          </Link>
+        ) : null}
 
         {children}
       </div>

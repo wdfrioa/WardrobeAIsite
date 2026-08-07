@@ -51,6 +51,20 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
+      <head>
+        {/*
+          Скрипт Telegram Mini App.
+
+          Загружается синхронно и до React — объект
+          window.Telegram.WebApp должен существовать к моменту,
+          когда компоненты начнут его спрашивать.
+
+          В обычном браузере скрипт просто ничего не создаёт,
+          сайт работает как раньше.
+        */}
+        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
+        <script src="https://telegram.org/js/telegram-web-app.js" />
+      </head>
       <body className="grain">
         <AuthProvider>{children}</AuthProvider>
       </body>
